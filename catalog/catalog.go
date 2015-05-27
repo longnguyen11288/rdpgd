@@ -16,5 +16,5 @@ func Catalog() (string, error) {
 }
 }
 `
-return catalog,nil
+	return catalog, nil
 }
