@@ -4,7 +4,9 @@ import (
 	"net/http"
 	"fmt"
 	"os"
+	"encoding/json"
 	"github.com/gorilla/mux"
+	"github.com/wayneeseguin/rdpg-agent/catalog"
 	//"github.com/wayneeseguin/rdpg-agent/sb"
 	//"github.com/wayneeseguin/rdpg-agent/plans"
 	//"github.com/wayneeseguin/rdpg-agent/services"
@@ -28,9 +30,9 @@ func RegisterEndpoints(r *mux.Router) {
 	r.HandleFunc("/plans/register/{cf_host_port}", Plans)
 }
 
-func Run(port string) {
+func Run() {
 	router := mux.NewRouter()
-	api.RegisterEndpoints(router)
+	RegisterEndpoints(router)
 	http.Handle("/", router)
 	http.ListenAndServe(":" + port, nil)
 }
@@ -46,11 +48,15 @@ func FetchCatalog(w http.ResponseWriter, request *http.Request) {
 	default:
 		fmt.Fprintf(w, "{}")
 	case "GET":
-		c := sb.FetchCatalog()
-		jsonCatalog, err := json.Marshal(catalog)
+		cat,err := catalog.Catalog()
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
-			w.Write(err)
+			w.Write([]byte(err.Error()))
+		}
+		jsonCatalog, err := json.Marshal(cat)
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			w.Write([]byte(err.Error()))
 		} else {
 			w.WriteHeader(http.StatusOK)
 			w.Write(jsonCatalog)
@@ -62,12 +68,13 @@ func FetchCatalog(w http.ResponseWriter, request *http.Request) {
 //(RI)DELETE /v2/service_instances/:id
 func Instance(w http.ResponseWriter, request *http.Request) { 
 	w.Header().Set("X-Broker-Api-Version", "2.4")
-	vars := mux.Vars(request)
-	id := vars["id"]
+	//vars := mux.Vars(request)
+	//id := vars["id"]
 	switch request.Method {
 	default:
 		fmt.Fprintf(w, "{}")
 	case "PUT": // Provision Instance
+	/*
 		requestParams := RequestParams{}
 		body, _ := ioutil.ReadAll(request.Body)
 		json.Unmarshal(body,&requestParams)
@@ -78,14 +85,15 @@ func Instance(w http.ResponseWriter, request *http.Request) {
 		}
 		return http.StatusInternalServerError, MarshalError(err)
 
+	*/
 		fmt.Fprintf(w, "{}")
 	case "DELETE": // Remove Instance
-		planId := request.URL.Query()["plan_id"][0]
+		//planId := request.URL.Query()["plan_id"][0]
 
-	err := b.Deprovision(planId, params["id"])
+		//err := b.Deprovision(planId, params["id"])
 
-	if err == nil { return http.StatusOK, "{}" ; }
-	return http.StatusInternalServerError, MarshalError(err)
+		// if err == nil { return http.StatusOK, "{}" ; }
+		//return http.StatusInternalServerError, MarshalError(err)
 		fmt.Fprintf(w, "{}")
 	}
 }

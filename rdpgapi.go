@@ -3,10 +3,9 @@ package main
 import (
 	"fmt"
 	"os"
+	"syscall"
 	"os/signal"
-	"net/http"
 	"io/ioutil"
-	"github.com/gorilla/mux"
 	"github.com/wayneeseguin/rdpg-agent/api"
 )
 
