@@ -27,7 +27,6 @@ func RegisterEndpoints(r *mux.Router) {
 	r.HandleFunc("/v2/catalog", FetchCatalog)
 	r.HandleFunc("/v2/service_instances/{id}", Instance)
 	r.HandleFunc("/v2/service_instances/{instance_id}/service_bindings/{id}", Binding)
-	r.HandleFunc("/plans/register/{cf_host_port}", Plans)
 }
 
 func Run() {
@@ -112,38 +111,6 @@ func Binding(w http.ResponseWriter, request *http.Request) {
 		fmt.Fprintf(w, "{}")
 	case "DELETE":
 		// binding.Remove()
-		fmt.Fprintf(w, "{}")
-	}
-}
-
-/*
-(RP)PUT /plans/register/:cf_host_port
-(RP)DELETE /plans/register/:cf_host_port
-*/
-func Plans(w http.ResponseWriter, request *http.Request) {
-	w.Header().Set("X-Broker-Api-Version", "2.4")
-	switch request.Method {
-	default:
-		fmt.Fprintf(w, "{}")
-	case "PUT":
-		// plans.Register(cf_host_port)
-		fmt.Fprintf(w, "{}")
-	case "DELETE": // Deregister
-		// plans.Deregister(cf_host_port)
-		/*
-			err := b.DeletePlan(params["service_id"], params["plan_id"])
-
-			if err == nil {
-				if registerCFServices {
-					// We need to specifically set the service broker password again, due to a
-					// possible bug in the CF client library.
-					sb.Password = brokerConfig.CFPassword
-					fmt.Println(cfs.UpdateCFService(sb))
-				}
-				return http.StatusOK, "{}"
-			}
-			return http.StatusInternalServerError, MarshalError(err)
-		*/
 		fmt.Fprintf(w, "{}")
 	}
 }
