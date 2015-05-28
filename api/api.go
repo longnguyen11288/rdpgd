@@ -51,20 +51,24 @@ func Run() {
 
 func auth(h http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, request *http.Request) {
-		auth := strings.SplitN(request.Header["Authorization"][0], " ", 2)
+		if len(request.Header["Authorization"]) == 0 {
+			http.Error(w, "Authorization Required", http.StatusUnauthorized)
+			return
+		}
 
+		auth := strings.SplitN(request.Header["Authorization"][0], " ", 2)
 		if len(auth) != 2 || auth[0] != "Basic" {
-			http.Error(w, "Unhandled Authroization Type, Expected Basic", http.StatusBadRequest)
+			http.Error(w, "Unhandled Authroization Type, Expected Basic\n", http.StatusBadRequest)
 			return
 		}
 		payload, err := base64.StdEncoding.DecodeString(auth[1])
 		if err != nil {
-			http.Error(w, "Authorization Failed", http.StatusUnauthorized)
+			http.Error(w, "Authorization Failed\n", http.StatusUnauthorized)
 			return
 		}
 		nv := strings.SplitN(string(payload), ":", 2)
-		if (len(nv) != 2) || isAuthorized(nv[0], nv[1]) {
-			http.Error(w, "Authorization Failed", http.StatusUnauthorized)
+		if (len(nv) != 2) || ! isAuthorized(nv[0], nv[1]) {
+			http.Error(w, "Authorization Failed\n", http.StatusUnauthorized)
 			return
 		}
 		h(w, request)

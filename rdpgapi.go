@@ -7,6 +7,7 @@ import (
 	"os/signal"
 	"io/ioutil"
 	"github.com/wayneeseguin/rdpg-agent/api"
+	"github.com/wayneeseguin/rdpg-agent/pg"
 )
 
 var (
@@ -30,6 +31,7 @@ func main() {
 	go func() {
 		for sig := range ch {
 			fmt.Printf("Received %v, shutting down...\n", sig)
+			pg.Close()
 			if err := os.Remove(pidFile) ; err != nil {
 				fmt.Printf("%s\n",err)
 				os.Exit(1)
@@ -37,5 +39,11 @@ func main() {
 			os.Exit(0)
 		}
 	}()
+	err := pg.Open()
+	if err != nil {
+		fmt.Printf("ERROR: %s\n", err)
+		proc, _ := os.FindProcess(os.Getpid())
+		proc.Signal(syscall.SIGTERM)
+	}
 	api.Run()
 }
