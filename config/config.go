@@ -10,8 +10,9 @@ import (
 )
 
 /*
-  TODO: Multiple CF's.
-  syslog or logpath
+  TODO: 
+  * Multiple CF's.
+  * syslog or logpath
 */
 
 type CF struct {

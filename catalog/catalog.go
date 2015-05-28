@@ -9,7 +9,7 @@ func Catalog() (string, error) {
   "description": "A Relilable Distributed PostgrSQL Service",
   "bindable": true,
   "plans": [{
-    "id": "rdpg-0.0.0.1-small",
+    "id": "rdpg-0.0.1-small",
     "name": "small",
     "description": "A small shared reliable PostgreSQL database."
   }]
