@@ -1,41 +1,81 @@
 package api
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"net/http"
 	"os"
+	"strings"
 
 	"github.com/gorilla/mux"
-	"github.com/wayneeseguin/rdpg-agent/health"
 	"github.com/wayneeseguin/rdpg-agent/catalog"
+	"github.com/wayneeseguin/rdpg-agent/health"
 	//"github.com/wayneeseguin/rdpg-agent/plans"
 	//"github.com/wayneeseguin/rdpg-agent/services"
 	//"github.com/wayneeseguin/rdpg-agent/instances"
 	//"github.com/wayneeseguin/rdpg-agent/bindings"
 )
 
-var port string
+var (
+	port, sbUser, sbPass string
+)
 
+// StatusPreconditionFailed
 func init() {
 	port = os.Getenv("RDPGAPI_PORT")
 	if port == "" {
 		port = "8080"
 	}
+	sbUser = os.Getenv("RDPGAPI_SB_USER")
+	if sbUser == "" {
+		sbUser = "cf"
+	}
+	sbPass = os.Getenv("RDPGAPI_SB_PASS")
+	if sbPass == "" {
+		sbPass = "cf"
+	}
 }
 
 func Run() {
 	router := mux.NewRouter()
-	RegisterEndpoints(router)
+
+	router.HandleFunc("/v2/catalog", auth(FetchCatalog))
+	router.HandleFunc("/v2/service_instances/{id}", auth(Instance))
+	router.HandleFunc("/v2/service_instances/{instance_id}/service_bindings/{id}", auth(Binding))
+	router.HandleFunc("/health/{check}", auth(Health))
+
 	http.Handle("/", router)
 	http.ListenAndServe(":"+port, nil)
 }
 
-func RegisterEndpoints(r *mux.Router) {
-	r.HandleFunc("/v2/catalog", FetchCatalog)
-	r.HandleFunc("/v2/service_instances/{id}", Instance)
-	r.HandleFunc("/v2/service_instances/{instance_id}/service_bindings/{id}", Binding)
-	r.HandleFunc("/health/{check}", Health)
+func auth(h http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, request *http.Request) {
+		auth := strings.SplitN(request.Header["Authorization"][0], " ", 2)
+
+		if len(auth) != 2 || auth[0] != "Basic" {
+			http.Error(w, "Unhandled Authroization Type, Expected Basic", http.StatusBadRequest)
+			return
+		}
+		payload, err := base64.StdEncoding.DecodeString(auth[1])
+		if err != nil {
+			http.Error(w, "Authorization Failed", http.StatusUnauthorized)
+			return
+		}
+		nv := strings.SplitN(string(payload), ":", 2)
+		if (len(nv) != 2) || isAuthorized(nv[0], nv[1]) {
+			http.Error(w, "Authorization Failed", http.StatusUnauthorized)
+			return
+		}
+		h(w, request)
+	}
+}
+
+func isAuthorized(username, password string) (bool) {
+	if username == sbUser && password == sbPass {
+		return true
+	}
+	return false
 }
 
 /*
@@ -115,4 +155,3 @@ func Health(w http.ResponseWriter, request *http.Request) {
 		fmt.Fprintf(w, "{}")
 	}
 }
-
