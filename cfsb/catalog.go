@@ -1,4 +1,4 @@
-package catalog
+package cfsb
 
 import (
 	"github.com/wayneeseguin/rdpg-agent/pg"

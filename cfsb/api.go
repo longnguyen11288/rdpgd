@@ -1,4 +1,4 @@
-package api
+package cfsb
 
 import (
 	"encoding/base64"
@@ -9,12 +9,6 @@ import (
 	"strings"
 
 	"github.com/gorilla/mux"
-	"github.com/wayneeseguin/rdpg-agent/catalog"
-	"github.com/wayneeseguin/rdpg-agent/health"
-	//"github.com/wayneeseguin/rdpg-agent/plans"
-	//"github.com/wayneeseguin/rdpg-agent/services"
-	//"github.com/wayneeseguin/rdpg-agent/instances"
-	//"github.com/wayneeseguin/rdpg-agent/bindings"
 )
 
 var (
@@ -23,7 +17,7 @@ var (
 
 // StatusPreconditionFailed
 func init() {
-	port = os.Getenv("RDPGAPI_PORT")
+	port = os.Getenv("RDPGAPI_SB_PORT")
 	if port == "" {
 		port = "8080"
 	}
@@ -37,13 +31,12 @@ func init() {
 	}
 }
 
-func Run() {
+func API() {
 	router := mux.NewRouter()
 
 	router.HandleFunc("/v2/catalog", auth(FetchCatalog))
 	router.HandleFunc("/v2/service_instances/{id}", auth(Instance))
 	router.HandleFunc("/v2/service_instances/{instance_id}/service_bindings/{id}", auth(Binding))
-	router.HandleFunc("/health/{check}", auth(Health))
 
 	http.Handle("/", router)
 	http.ListenAndServe(":"+port, nil)
@@ -144,18 +137,3 @@ func Binding(w http.ResponseWriter, request *http.Request) {
 	}
 }
 
-/*
-(HC) GET /health/hapbpg
-*/
-func Health(w http.ResponseWriter, request *http.Request) {
-	switch request.Method {
-	case "GET":
-		vars := mux.Vars(request)
-		w.WriteHeader(health.Check(vars["check"]))
-		// health check...
-		fmt.Fprintf(w, "{}")
-	default:
-		w.WriteHeader(http.StatusMethodNotAllowed)
-		fmt.Fprintf(w, "{}")
-	}
-}

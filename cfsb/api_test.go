@@ -1,4 +1,5 @@
-package api
+package cfsb
+
 import (
 	"testing"
 )

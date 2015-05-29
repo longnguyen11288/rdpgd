@@ -1,8 +1,4 @@
-package services
-
-import (
-	"github.com/wayneeseguin/rdpg-agent/plans"
-)
+package cfsb
 
 type Service struct {
 	Id          string        `json:"id"`

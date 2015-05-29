@@ -1,4 +1,4 @@
-package cf
+package cfsb
 
 type CF struct {
 	CCTarget  string `yaml:"cc_target"`

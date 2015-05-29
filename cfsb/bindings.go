@@ -1,9 +1,4 @@
-package bindings
-
-import (
-	"github.com/jmoiron/sqlx"
-	//"github.com/wayneeseguin/rdpg-agent/pg"
-)
+package cfsb
 
 type Credentials struct {
 	Uri      string `json:"uri"`
@@ -16,7 +11,7 @@ type Credentials struct {
 
 type ServiceBinding struct {
 	Id       string
-	DBConn   *sqlx.DB
+	URI      string
 	UserName string
 	Password string
 }

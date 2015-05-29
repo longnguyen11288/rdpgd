@@ -1,8 +1,4 @@
-package instances
-
-import (
-	_ "github.com/lib/pq"
-)
+package cfsb
 
 type Instance struct {
 	Id string

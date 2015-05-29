@@ -3,6 +3,7 @@
 ## Development
 ```
 export \
+  RDPG_SB_PORT=8080 \
   RDPGAPI_SB_USER=cf \
   RDPGAPI_SB_PASS=cf \
   RDPGAPI_PGURI="postgresql://postgres:pgbdr@10.244.2.2:6432/pgbdr?fallback_application_name=rdpg-agent&connect_timeout=5&sslmode=disable" 

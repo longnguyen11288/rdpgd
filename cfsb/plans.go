@@ -1,4 +1,4 @@
-package plans
+package cfsb
 
 type Metadata struct {
 	Cost        string              `json:"cost"`

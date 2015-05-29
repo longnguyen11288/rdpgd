@@ -28,6 +28,7 @@ func main() {
 	}
 	ch := make(chan os.Signal, 1)
 	signal.Notify(ch, os.Interrupt, syscall.SIGTERM)
+
 	go func() {
 		for sig := range ch {
 			fmt.Printf("Received %v, shutting down...\n", sig)
@@ -39,11 +40,17 @@ func main() {
 			os.Exit(0)
 		}
 	}()
+
 	err := pg.Open()
 	if err != nil {
 		fmt.Printf("ERROR: %s\n", err)
 		proc, _ := os.FindProcess(os.Getpid())
 		proc.Signal(syscall.SIGTERM)
 	}
-	api.Run()
+
+	go cfsb.API()
+
+	go admin.API()
+
+	workers.Run()
 }
