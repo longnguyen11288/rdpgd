@@ -1,8 +1,8 @@
 package bindings
 
 import (
-	"database/sql"
-	_ "github.com/lib/pq"
+	"github.com/jmoiron/sqlx"
+	//"github.com/wayneeseguin/rdpg-agent/pg"
 )
 
 type Credentials struct {
@@ -15,9 +15,9 @@ type Credentials struct {
 }
 
 type ServiceBinding struct {
-	Id            string
-	ServiceDBConn *sql.DB
-	UserName      string
-	Password      string
+	Id       string
+	DBConn   *sqlx.DB
+	UserName string
+	Password string
 }
 

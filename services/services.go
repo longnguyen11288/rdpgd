@@ -5,26 +5,26 @@ import (
 )
 
 type Service struct {
-	Id          string          `json:"id"`
-	Name        string          `json:"name"`
-	Description string          `json:"description"`
-	Tags        []string        `json:"tags"`
-	Metadata    ServiceMetadata `json:"metadata"`
-	Plans []*plans.Plan `json:"plans"`
-	Bindable bool `json:"bindable"`
+	Id          string        `json:"id"`
+	Name        string        `json:"name"`
+	Description string        `json:"description"`
+	Tags        []string      `json:"tags"`
+	Metadata    Metadata      `json:"metadata"`
+	Plans       []*plans.Plan `json:"plans"`
+	Bindable    bool          `json:"bindable"`
 }
 
-type ServiceMetadata struct {
-	Label       string                  `json:"label"`
-	Description string                  `json:"description"`
-	Provider    string                  `json:"provider"`
-	Version     string                  `json:"version"`
-	Requires    []string                `json:"requires"`
-	Tags        []string                `json:"tags"`
-	Metadata    ServiceMetadataMetadata `json:"metadata"`
+type Metadata struct {
+	Label       string       `json:"label"`
+	Description string       `json:"description"`
+	Provider    string       `json:"provider"`
+	Version     string       `json:"version"`
+	Requires    []string     `json:"requires"`
+	Tags        []string     `json:"tags"`
+	Metadata    TileMetadata `json:"metadata"`
 }
 
-type ServiceMetadataMetadata struct {
+type TileMetadata struct {
 	DisplayName         string `json:"displayname"`
 	ImageUrl            string `json:"imageurl"`
 	LongDescription     string `json:"longdescription"`
@@ -32,3 +32,4 @@ type ServiceMetadataMetadata struct {
 	DocumentationUrl    string `json:"documentationurl"`
 	SupportUrl          string `json:"supporturl"`
 }
+
