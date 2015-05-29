@@ -6,7 +6,9 @@ import (
 	"syscall"
 	"os/signal"
 	"io/ioutil"
-	"github.com/wayneeseguin/rdpg-agent/api"
+	"github.com/wayneeseguin/rdpg-agent/cfsb"
+	"github.com/wayneeseguin/rdpg-agent/admin"
+	"github.com/wayneeseguin/rdpg-agent/workers"
 	"github.com/wayneeseguin/rdpg-agent/pg"
 )
 
