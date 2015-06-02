@@ -9,12 +9,14 @@ import (
 	"strings"
 
 	"github.com/gorilla/mux"
-	"github.com/wayneeseguin/rdpg-agent/health"
 )
 
 var (
 	adminPort, adminUser, adminPass string
 )
+
+type Admin struct {
+}
 
 // StatusPreconditionFailed
 func init() {
@@ -33,12 +35,12 @@ func init() {
 }
 
 func API() {
+	AdminMux := http.NewServeMux()
 	router := mux.NewRouter()
-
 	router.HandleFunc("/health/{check}", httpAuth(HealthHandler))
-
-	http.Handle("/", router)
-	http.ListenAndServe(":"+adminPort, nil)
+	AdminMux.Handle("/", router)
+	//http.Handle("/", router)
+	http.ListenAndServe(":"+adminPort, AdminMux)
 }
 
 func httpAuth(h http.HandlerFunc) http.HandlerFunc {

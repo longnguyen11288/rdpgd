@@ -10,7 +10,7 @@ import (
 	"github.com/wayneeseguin/rdpg-agent/admin"
 	"github.com/wayneeseguin/rdpg-agent/workers"
 	"github.com/wayneeseguin/rdpg-agent/pg"
-	"github.com/wayneeseguin/rdpg-agent/pgbdr"
+	"github.com/wayneeseguin/rdpg-agent/rdpg"
 )
 
 var (
@@ -51,7 +51,7 @@ func main() {
 		proc.Signal(syscall.SIGTERM)
 	}
 
-	pgbdr.InitializeSchema()
+	rdpg.InitializeSchema()
 
 	go cfsb.API()
 

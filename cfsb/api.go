@@ -16,6 +16,9 @@ var (
 	sbPort, sbUser, sbPass string
 )
 
+type CFSB struct {
+}
+
 // StatusPreconditionFailed
 func init() {
 	sbPort = os.Getenv("RDPGAPI_SB_PORT")
@@ -33,14 +36,15 @@ func init() {
 }
 
 func API() {
+	CFSBMux := http.NewServeMux()
 	router := mux.NewRouter()
-
 	router.HandleFunc("/v2/catalog", httpAuth(CatalogHandler))
 	router.HandleFunc("/v2/service_instances/{id}", httpAuth(InstanceHandler))
+	CFSBMux.Handle("/", router)
 	router.HandleFunc("/v2/service_instances/{instance_id}/service_bindings/{id}", httpAuth(BindingHandler))
 
 	http.Handle("/", router)
-	http.ListenAndServe(":"+sbPort, nil)
+	http.ListenAndServe(":"+sbPort, CFSBMux)
 }
 
 func httpAuth(h http.HandlerFunc) http.HandlerFunc {

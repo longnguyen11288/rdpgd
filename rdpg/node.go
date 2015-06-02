@@ -1,4 +1,4 @@
-package pgbdr
+package rdpg
 
 import (
 	"fmt"
@@ -20,13 +20,18 @@ type Node struct {
 	InitFromDSN string `db:"node_init_from_dsn" json:"node_init_from_dsn" json:"init_from_dsn"`
 }
 
-func InitializeSchema() error {
-	//n := NewNode("127.0.0.1", "5432", "postgres", "rdpg")
-	return nil
-}
-
 func NewNode(host, port, user, database string) Node {
 	return Node{Host: host, Port: port, User: user, Database: database}
+}
+
+func (n * Node) Connect() (db *sqlx.DB, err error) {
+	uri := n.URI()
+	db, err = sqlx.Connect("postgres", uri)
+	if err != nil {
+		log.Error(fmt.Sprintf("rdpg.Node#Connect(): %s:\n%s\n", uri, err))
+		return db, err
+	}
+	return db, nil
 }
 
 func (n *Node) URI() (uri string) {
@@ -36,10 +41,9 @@ func (n *Node) URI() (uri string) {
 }
 
 func (n *Node) CreateDatabase(name string) (err error) {
-	uri := n.URI()
-	db, err := sqlx.Connect("postgres", uri)
+	db,err := n.Connect()
 	if err != nil {
-		log.Error(fmt.Sprintf("%s:\n%s\n", uri, err))
+		log.Error(fmt.Sprintf("rdpg.Node#CreateDatabase(): %s\n", err))
 		return err
 	}
 	defer db.Close()

@@ -2,6 +2,8 @@ package admin
 
 import (
 	"net/http"
+
+	"github.com/wayneeseguin/rdpg-agent/pg"
 )
 
 func Check(check string) (status int) {

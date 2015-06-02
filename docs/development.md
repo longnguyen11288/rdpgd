@@ -47,7 +47,7 @@ export \
   RDPGAPI_SB_USER=cf \
   RDPGAPI_SB_PASS=cf \
   RDPG_ADMIN_PORT=58888 \
-  RDPGAPI_PG_URI="postgresql://postgres:pgbdr@${firstNode}:6432/rdpg?fallback_application_name=rdpg-agent&connect_timeout=5&sslmode=disable" 
+  RDPGAPI_PG_URI="postgresql://postgres:admin@${firstNode}:6432/rdpg?fallback_application_name=rdpg-agent&connect_timeout=5&sslmode=disable" 
 ```
 
 To run the agent during development,
