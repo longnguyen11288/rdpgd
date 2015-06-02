@@ -81,8 +81,7 @@ func HealthHandler(w http.ResponseWriter, request *http.Request) {
 	switch request.Method {
 	case "GET":
 		vars := mux.Vars(request)
-		w.WriteHeader(health.Check(vars["check"]))
-		// health check...
+		w.WriteHeader(Check(vars["check"]))
 		fmt.Fprintf(w, "{}")
 	default:
 		w.WriteHeader(http.StatusMethodNotAllowed)
