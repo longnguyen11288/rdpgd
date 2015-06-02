@@ -2,7 +2,7 @@ package admin
 
 import (
 	"encoding/base64"
-	"encoding/json"
+	//"encoding/json"
 	"fmt"
 	"net/http"
 	"os"
@@ -13,35 +13,35 @@ import (
 )
 
 var (
-	port, sbUser, sbPass string
+	adminPort, adminUser, adminPass string
 )
 
 // StatusPreconditionFailed
 func init() {
-	port = os.Getenv("RDPGAPI_ADMIN_PORT")
-	if port == "" {
-		port = "8888"
+	adminPort = os.Getenv("RDPGAPI_ADMIN_PORT")
+	if adminPort == "" {
+		adminPort = "58888"
 	}
-	sbUser = os.Getenv("RDPGAPI_ADMIN_USER")
-	if sbUser == "" {
-		sbUser = "admin"
+	adminUser = os.Getenv("RDPGAPI_ADMIN_USER")
+	if adminUser == "" {
+		adminUser = "admin"
 	}
-	sbPass = os.Getenv("RDPGAPI_ADMIN_PASS")
-	if sbPass == "" {
-		sbPass = "admin"
+	adminPass = os.Getenv("RDPGAPI_ADMIN_PASS")
+	if adminPass == "" {
+		adminPass = "admin"
 	}
 }
 
 func API() {
 	router := mux.NewRouter()
 
-	router.HandleFunc("/health/{check}", auth(Health))
+	router.HandleFunc("/health/{check}", httpAuth(HealthHandler))
 
 	http.Handle("/", router)
-	http.ListenAndServe(":"+port, nil)
+	http.ListenAndServe(":"+adminPort, nil)
 }
 
-func auth(h http.HandlerFunc) http.HandlerFunc {
+func httpAuth(h http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, request *http.Request) {
 		if len(request.Header["Authorization"]) == 0 {
 			http.Error(w, "Authorization Required", http.StatusUnauthorized)
@@ -68,7 +68,7 @@ func auth(h http.HandlerFunc) http.HandlerFunc {
 }
 
 func isAuthorized(username, password string) (bool) {
-	if username == sbUser && password == sbPass {
+	if username == adminUser && password == adminPass {
 		return true
 	}
 	return false
@@ -77,7 +77,7 @@ func isAuthorized(username, password string) (bool) {
 /*
 (HC) GET /health/hapbpg
 */
-func Health(w http.ResponseWriter, request *http.Request) {
+func HealthHandler(w http.ResponseWriter, request *http.Request) {
 	switch request.Method {
 	case "GET":
 		vars := mux.Vars(request)

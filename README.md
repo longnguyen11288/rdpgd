@@ -1,14 +1,8 @@
 # Reliable Distributed PostgreSQL AIP with CF Service Broker API
 
-## Development
-```
-export \
-  RDPG_SB_PORT=8080 \
-  RDPGAPI_SB_USER=cf \
-  RDPGAPI_SB_PASS=cf \
-  RDPGAPI_PGURI="postgresql://postgres:pgbdr@10.244.2.2:6432/pgbdr?fallback_application_name=rdpg-agent&connect_timeout=5&sslmode=disable" 
-go run rdpg-agent.go
-```
+For development see `docs/development.md`.
+
+For production see `docs/production.md`.
 
 ## TODOs
 * Add an endpoint which allows for dynamically adding a CF.

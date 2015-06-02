@@ -9,17 +9,18 @@ import (
 	"strings"
 
 	"github.com/gorilla/mux"
+	_ "github.com/wayneeseguin/rdpg-agent/log"
 )
 
 var (
-	port, sbUser, sbPass string
+	sbPort, sbUser, sbPass string
 )
 
 // StatusPreconditionFailed
 func init() {
-	port = os.Getenv("RDPGAPI_SB_PORT")
-	if port == "" {
-		port = "8080"
+	sbPort = os.Getenv("RDPGAPI_SB_PORT")
+	if sbPort == "" {
+		sbPort = "8080"
 	}
 	sbUser = os.Getenv("RDPGAPI_SB_USER")
 	if sbUser == "" {
@@ -34,15 +35,15 @@ func init() {
 func API() {
 	router := mux.NewRouter()
 
-	router.HandleFunc("/v2/catalog", auth(FetchCatalog))
-	router.HandleFunc("/v2/service_instances/{id}", auth(Instance))
-	router.HandleFunc("/v2/service_instances/{instance_id}/service_bindings/{id}", auth(Binding))
+	router.HandleFunc("/v2/catalog", httpAuth(CatalogHandler))
+	router.HandleFunc("/v2/service_instances/{id}", httpAuth(InstanceHandler))
+	router.HandleFunc("/v2/service_instances/{instance_id}/service_bindings/{id}", httpAuth(BindingHandler))
 
 	http.Handle("/", router)
-	http.ListenAndServe(":"+port, nil)
+	http.ListenAndServe(":"+sbPort, nil)
 }
 
-func auth(h http.HandlerFunc) http.HandlerFunc {
+func httpAuth(h http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, request *http.Request) {
 		if len(request.Header["Authorization"]) == 0 {
 			http.Error(w, "Authorization Required", http.StatusUnauthorized)
@@ -75,19 +76,22 @@ func isAuthorized(username, password string) (bool) {
 	return false
 }
 
+
 /*
 (FC) GET /v2/catalog
 */
-func FetchCatalog(w http.ResponseWriter, request *http.Request) {
-	w.Header().Set("X-Broker-Api-Version", "2.4")
+func CatalogHandler(w http.ResponseWriter, request *http.Request) {
+	// r.Header().Get("X-Broker-Api-Version") #  "2.4")
+
 	switch request.Method {
 	case "GET":
-		cat, err := catalog.Catalog()
+		c := Catalog{}
+		err := c.Fetch()
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			w.Write([]byte(err.Error()))
 		}
-		jsonCatalog, err := json.Marshal(cat)
+		jsonCatalog, err := json.Marshal(c)
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			w.Write([]byte(err.Error()))
@@ -105,8 +109,8 @@ func FetchCatalog(w http.ResponseWriter, request *http.Request) {
 (PI) PUT /v2/service_instances/:id
 (RI) DELETE /v2/service_instances/:id
 */
-func Instance(w http.ResponseWriter, request *http.Request) {
-	w.Header().Set("X-Broker-Api-Version", "2.4")
+func InstanceHandler(w http.ResponseWriter, request *http.Request) {
+	// r.Header().Get("X-Broker-Api-Version") #  "2.4")
 	switch request.Method {
 	case "PUT": // Provision Instance
 		fmt.Fprintf(w, "{}")
@@ -122,8 +126,8 @@ func Instance(w http.ResponseWriter, request *http.Request) {
 (CB) PUT /v2/service_instances/:instance_id/service_bindings/:id
 (RB) DELETE /v2/service_instances/:instance_id/service_bindings/:id
 */
-func Binding(w http.ResponseWriter, request *http.Request) {
-	w.Header().Set("X-Broker-Api-Version", "2.4")
+func BindingHandler(w http.ResponseWriter, request *http.Request) {
+	// r.Header().Get("X-Broker-Api-Version") #  "2.4")
 	switch request.Method {
 	case "PUT":
 		// binding.Create(instance_id,binding_id)

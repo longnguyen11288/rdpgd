@@ -16,9 +16,9 @@ var (
 )
 
 func init() {
-	pguri = os.Getenv("RDPGAPI_PGURI")
+	pguri = os.Getenv("RDPGAPI_PG_URI")
 	if pguri == "" || pguri[0:13] != "postgresql://" {
-		fmt.Printf("ERROR: RDPGAPI_PGURI is not set correctly in the environment.\n")
+		fmt.Printf("ERROR: RDPGAPI_PG_URI is not set correctly in the environment.\n")
 		proc, _ := os.FindProcess(os.Getpid())
 		proc.Signal(syscall.SIGTERM)
 	}
