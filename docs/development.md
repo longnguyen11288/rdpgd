@@ -41,13 +41,20 @@ instructions on the website.
 Configuration of `rdpg-agent` is done via environment variables passed into the running process,
 
 ```sh
-firstNode=10.244.2.2
 export \
+  LOGLEVEL=debug \
   RDPG_SB_PORT=8888 \
-  RDPGAPI_SB_USER=cf \
-  RDPGAPI_SB_PASS=cf \
+  RDPG_SB_USER=cf \
+  RDPG_SB_PASS=cf \
   RDPG_ADMIN_PORT=58888 \
-  RDPGAPI_PG_URI="postgresql://postgres:admin@${firstNode}:6432/rdpg?fallback_application_name=rdpg-agent&connect_timeout=5&sslmode=disable" 
+  RDPG_PG_URI="postgresql://postgres:admin@127.0.0.1:55432/rdpg?sslmode=disable&connect_timeout=5&fallback_application_name=rdpg-agent" 
+```
+
+When running the agent locally, you will need to first deploy the 
+`rdpg-boshrelease` and then forward the PostgreSQL from the release to your localhost,
+
+```sh
+ssh  -L 5432:127.0.0.1:55432 vcap@10.244.2.2 # BOSH Lite Password: c1oudc0w
 ```
 
 To run the agent during development,
@@ -55,6 +62,17 @@ To run the agent during development,
 ```sh
 go run rdpg-agent.go
 ```
-### Testing
+# Testing
 Once GoConvey is running visit [The Web UI](http://127.0.0.1:8080)
 
+Fetch catalog,
+
+```sh
+curl -vvv -H "X-Broker-API-Version: 2.4" http://cf:cf@127.0.0.1:8080/v2/catalog
+```
+
+For running a health check in development we can run,
+
+```sh
+curl -vvv http://admin:admin@127.0.0.1:58888/health/ha_pb_pg
+```

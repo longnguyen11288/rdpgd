@@ -20,15 +20,15 @@ type Admin struct {
 
 // StatusPreconditionFailed
 func init() {
-	adminPort = os.Getenv("RDPGAPI_ADMIN_PORT")
+	adminPort = os.Getenv("RDPG_ADMIN_PORT")
 	if adminPort == "" {
 		adminPort = "58888"
 	}
-	adminUser = os.Getenv("RDPGAPI_ADMIN_USER")
+	adminUser = os.Getenv("RDPG_ADMIN_USER")
 	if adminUser == "" {
 		adminUser = "admin"
 	}
-	adminPass = os.Getenv("RDPGAPI_ADMIN_PASS")
+	adminPass = os.Getenv("RDPG_ADMIN_PASS")
 	if adminPass == "" {
 		adminPass = "admin"
 	}

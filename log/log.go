@@ -12,7 +12,7 @@ var (
 )
 
 func init() {
-	lvl := os.Getenv("LOG_LEVEL")
+	lvl := os.Getenv("LOGLEVEL")
 	if lvl != "" {
 		level = code(lvl)
 	} else {
@@ -48,16 +48,12 @@ func log(lvl, msg string) {
 	if level <= c {
 		ts := time.Now().Format(time.RFC3339)
 		if c < 50 {
-			fmt.Fprintf(os.Stderr, "%s [rdpg-agent] %s %s", ts, lvl, msg)
-
+			fmt.Fprintf(os.Stderr, "%s rdpg-agent %s %s\n", ts, lvl, msg)
 		} else {
-			fmt.Fprintf(os.Stdout, "%s [rdpg-agent] %s %s", ts, lvl, msg)
+			// TODO: Standard output logs via channel.
+			fmt.Fprintf(os.Stdout, "%s rdpg-agent %s %s\n", ts, lvl, msg)
 		}
 	}
-}
-
-func All(msg string) {
-	log("all", msg)
 }
 
 func Trace(msg string) {

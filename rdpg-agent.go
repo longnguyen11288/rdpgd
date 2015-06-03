@@ -11,6 +11,7 @@ import (
 	"github.com/wayneeseguin/rdpg-agent/workers"
 	"github.com/wayneeseguin/rdpg-agent/pg"
 	"github.com/wayneeseguin/rdpg-agent/rdpg"
+	"github.com/wayneeseguin/rdpg-agent/log"
 )
 
 var (
@@ -25,7 +26,7 @@ func main() {
 	if pidFile != "" {
 		err := ioutil.WriteFile(pidFile,[]byte(string(os.Getpid())), 0644)
 		if err != nil {
-			fmt.Printf("ERROR: %s\n", err)
+			log.Error(err.Error())
 			os.Exit(1)
 		}
 	}
@@ -34,11 +35,13 @@ func main() {
 
 	go func() {
 		for sig := range ch {
-			fmt.Printf("Received %v, shutting down...\n", sig)
+			log.Info(fmt.Sprintf("Received %v, shutting down...\n", sig))
 			pg.Close()
-			if err := os.Remove(pidFile) ; err != nil {
-				fmt.Printf("%s\n",err)
-				os.Exit(1)
+			if _, err := os.Stat(pidFile); err == nil {
+				if err := os.Remove(pidFile) ; err != nil {
+					log.Error(err.Error())
+					os.Exit(1)
+				}
 			}
 			os.Exit(0)
 		}
@@ -46,7 +49,7 @@ func main() {
 
 	err := pg.Open()
 	if err != nil {
-		fmt.Printf("ERROR: %s\n", err)
+		log.Error(err.Error())
 		proc, _ := os.FindProcess(os.Getpid())
 		proc.Signal(syscall.SIGTERM)
 	}

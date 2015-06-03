@@ -36,7 +36,7 @@ func (n * Node) Connect() (db *sqlx.DB, err error) {
 
 func (n *Node) URI() (uri string) {
 	d := "postgres://%s@%s:%s/%s?fallback_application_name=%s&connect_timeout=%s&sslmode=%s"
-	uri = fmt.Sprintf(d, n.User, n.Host, n.Port, n.Database, "rdpg-agent", "5s", "disable")
+	uri = fmt.Sprintf(d, n.User, n.Host, n.Port, n.Database, "rdpg-agent", "5", "disable")
 	return
 }
 
