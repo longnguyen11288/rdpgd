@@ -6,8 +6,8 @@ import (
 	"os"
 	"syscall"
 
-	_ "github.com/lib/pq"
 	"github.com/jmoiron/sqlx"
+	_ "github.com/lib/pq"
 )
 
 var (
@@ -16,7 +16,7 @@ var (
 )
 
 func init() {
-	pguri = os.Getenv("RDPGAPI_PG_URI")
+	pguri = os.Getenv("RDPG_PG_URI")
 	if pguri == "" || pguri[0:13] != "postgresql://" {
 		fmt.Printf("ERROR: RDPGAPI_PG_URI is not set correctly in the environment.\n")
 		proc, _ := os.FindProcess(os.Getpid())
@@ -35,7 +35,7 @@ func Open() (err error) {
 	err = DB.Ping()
 	if err != nil {
 		DB.Close()
-		return errors.New(fmt.Sprintf("ERROR: %s:\n%s\n", pguri,err))
+		return errors.New(fmt.Sprintf("ERROR: %s:\n%s\n", pguri, err))
 	}
 	return nil
 }

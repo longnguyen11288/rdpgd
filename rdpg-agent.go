@@ -2,16 +2,17 @@ package main
 
 import (
 	"fmt"
-	"os"
-	"syscall"
-	"os/signal"
 	"io/ioutil"
-	"github.com/wayneeseguin/rdpg-agent/cfsb"
+	"os"
+	"os/signal"
+	"syscall"
+
 	"github.com/wayneeseguin/rdpg-agent/admin"
-	"github.com/wayneeseguin/rdpg-agent/workers"
+	"github.com/wayneeseguin/rdpg-agent/cfsb"
+	"github.com/wayneeseguin/rdpg-agent/log"
 	"github.com/wayneeseguin/rdpg-agent/pg"
 	"github.com/wayneeseguin/rdpg-agent/rdpg"
-	"github.com/wayneeseguin/rdpg-agent/log"
+	"github.com/wayneeseguin/rdpg-agent/workers"
 )
 
 var (
@@ -19,12 +20,12 @@ var (
 )
 
 func init() {
-	pidFile = os.Getenv("RDPGAPI_PIDFILE")
+	pidFile = os.Getenv("RDPG_AGENT_PIDFILE")
 }
 
 func main() {
 	if pidFile != "" {
-		err := ioutil.WriteFile(pidFile,[]byte(string(os.Getpid())), 0644)
+		err := ioutil.WriteFile(pidFile, []byte(string(os.Getpid())), 0644)
 		if err != nil {
 			log.Error(err.Error())
 			os.Exit(1)
@@ -38,7 +39,7 @@ func main() {
 			log.Info(fmt.Sprintf("Received %v, shutting down...\n", sig))
 			pg.Close()
 			if _, err := os.Stat(pidFile); err == nil {
-				if err := os.Remove(pidFile) ; err != nil {
+				if err := os.Remove(pidFile); err != nil {
 					log.Error(err.Error())
 					os.Exit(1)
 				}
