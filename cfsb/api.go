@@ -65,7 +65,7 @@ func httpAuth(h http.HandlerFunc) http.HandlerFunc {
 			return
 		}
 		nv := strings.SplitN(string(payload), ":", 2)
-		if (len(nv) != 2) || ! isAuthorized(nv[0], nv[1]) {
+		if (len(nv) != 2) || !isAuthorized(nv[0], nv[1]) {
 			http.Error(w, "Authorization Failed\n", http.StatusUnauthorized)
 			return
 		}
@@ -73,13 +73,12 @@ func httpAuth(h http.HandlerFunc) http.HandlerFunc {
 	}
 }
 
-func isAuthorized(username, password string) (bool) {
+func isAuthorized(username, password string) bool {
 	if username == sbUser && password == sbPass {
 		return true
 	}
 	return false
 }
-
 
 /*
 (FC) GET /v2/catalog
@@ -144,4 +143,3 @@ func BindingHandler(w http.ResponseWriter, request *http.Request) {
 		fmt.Fprintf(w, "{}")
 	}
 }
-
