@@ -11,10 +11,10 @@ import (
 )
 
 type Node struct {
-	Host        string `json:"host"`
-	Port        string `json:"port"`
-	User        string `json:"user"`
-	Database    string `json:"database"`
+	Host        string `db:"host" json:"host"`
+	Port        string `db:"port" json:"port"`
+	User        string `db:"user" json:"user"`
+	Database    string `db:"database" json:"database"`
 	Name        string `db:"node_name" json:"node_name" json:"name"`
 	LocalDSN    string `db:"node_local_dsn" json:"node_local_dsn" json:"local_dsn"`
 	InitFromDSN string `db:"node_init_from_dsn" json:"node_init_from_dsn" json:"init_from_dsn"`
@@ -34,6 +34,21 @@ func (n * Node) Connect() (db *sqlx.DB, err error) {
 	return db, nil
 }
 
+
+func UserExists() {
+	//"SELECT rolname FROM pg_roles WHERE rolname='${rdpgUser}';"
+}
+
+func DatabaseExists() {
+	//"SELECT datname FROM pg_database WHERE datname='${rdpgDB}';"
+}
+func CreateDatabase() {
+	//
+}
+
+func CreateExtension(name string) {
+	//("CREATE EXTENSION IF NOT EXISTS ?;",name)
+}
 func (n *Node) URI() (uri string) {
 	d := "postgres://%s@%s:%s/%s?fallback_application_name=%s&connect_timeout=%s&sslmode=%s"
 	uri = fmt.Sprintf(d, n.User, n.Host, n.Port, n.Database, "rdpg-agent", "5", "disable")

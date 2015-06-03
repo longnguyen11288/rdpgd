@@ -2,7 +2,7 @@ package rdpg
 
 //uuid_generate_v1mc(),
 
-var SQLStatements map[string]string = map[string]string {
+var SQL map[string]string = map[string]string {
 	"rdpg_extensions": `
 CREATE EXTENSION IF NOT EXISTS btree_gist;
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
@@ -10,10 +10,10 @@ CREATE EXTENSION IF NOT EXISTS pgcrypto;
 "create_table_rdpg_services": `
 CREATE TABLE IF NOT EXISTS rdpg.services(
   id               BIGSERIAL PRIMARY KEY NOT NULL,
-  uuid             UUID DEFAULT gen_random_uuid(),
+  uuid             UUID      DEFAULT gen_random_uuid(),
   name             TEXT,
   description      TEXT,
-  bindable         boolean DEFAULT TRUE,
+  bindable         boolean   DEFAULT TRUE,
   dashboard_client json,
   created_at       timestamp DEFAULT CURRENT_TIMESTAMP,
   effective_at     timestamp DEFAULT CURRENT_TIMESTAMP,
@@ -22,12 +22,12 @@ CREATE TABLE IF NOT EXISTS rdpg.services(
 `,
 "create_table_rdpg_plans": `
 CREATE TABLE IF NOT EXISTS rdpg.plans(
-  id             BIGSERIAL PRIMARY KEY NOT NULL,
-  uuid           UUID DEFAULT   gen_random_uuid(),
-  service_id     UUID REFERENCES rdpg.services(id),
+  id             BIGSERIAL    PRIMARY KEY NOT NULL,
+  uuid           UUID DEFAULT gen_random_uuid(),
+  service_id     BIGINT       REFERENCES rdpg.services(id),
   name           TEXT,
   description    TEXT,
-  free           boolean DEFAULT true,
+  free           boolean   DEFAULT true,
   created_at     timestamp DEFAULT CURRENT_TIMESTAMP,
   effective_at   timestamp DEFAULT CURRENT_TIMESTAMP,
   ineffective_at timestamp

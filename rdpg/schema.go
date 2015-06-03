@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 
+	"database/sql"
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
 	"github.com/wayneeseguin/rdpg-agent/log"
@@ -27,8 +28,8 @@ func InitializeSchema() (err error) {
 	}
 	defer db.Close()
 	
-	log.Debug(fmt.Sprintf("rdpg.InitializeSchema() %s",SQLStatements["rdpg_extensions"]))
-	if _, err = db.Exec(SQLStatements["rdpg_extensions"]); err != nil {
+	log.Debug(fmt.Sprintf("rdpg.InitializeSchema() %s",SQL["rdpg_extensions"]))
+	if _, err = db.Exec(SQL["rdpg_extensions"]); err != nil {
 		log.Error(fmt.Sprintf("rdpg.InitializeSchema(rdpg_extensions) %s\n", err))
 		return err
 	}
@@ -37,44 +38,42 @@ func InitializeSchema() (err error) {
 	log.Debug(fmt.Sprintf("rdpg.InitializeSchema() %s",sq))
 	if _, err = db.Exec(sq); err != nil {
 		log.Error(fmt.Sprintf("rdpg.InitializeSchema(create_table_services) %s\n", err))
-		return err
 	}
 
-	log.Debug(fmt.Sprintf("rdpg.InitializeSchema() %s",SQLStatements["create_table_rdpg_services"]))
-	if _, err = db.Exec(SQLStatements["create_table_rdpg_services"]); err != nil {
+	// TODO: Check if table exists first and only run if it doesn't.
+	log.Debug(fmt.Sprintf("rdpg.InitializeSchema() %s",SQL["create_table_rdpg_services"]))
+	if _, err = db.Exec(SQL["create_table_rdpg_services"]); err != nil {
 		log.Error(fmt.Sprintf("rdpg.InitializeSchema(create_table_rdpg_services) %s\n", err))
-		return err
 	}
 
-	log.Debug(fmt.Sprintf("rdpg.InitializeSchema() %s",SQLStatements["create_table_rdpg_plans"]))
-	if _, err = db.Exec(SQLStatements["create_table_plans"]); err != nil {
+	// TODO: Check if table exists first and only run if it doesn't.
+	log.Debug(fmt.Sprintf("rdpg.InitializeSchema() %s",SQL["create_table_rdpg_plans"]))
+	if _, err = db.Exec(SQL["create_table_rdpg_plans"]); err != nil {
 		log.Error(fmt.Sprintf("rdpg.InitializeSchema(create_table_plans) %s\n", err))
-		return err
 	}
 
-	type Service struct {
-		Name string `db:"name"`
-	}
-	s := &Service{}
+	var name string
 
-	if err = db.Get(&s, "SELECT name FROM rdpg.services WHERE name='rdpg' LIMIT 1;"); err != nil {
-		log.Error(fmt.Sprintf("rdpg.InitializeSchema() %s\n", err))
-		return err
-	}
-	if s.Name != "rdpg" {
-		if _, err = db.Exec(SQLStatements["insert_default_rdpg_services"]); err != nil {
-			log.Error(fmt.Sprintf("rdpg.InitializeSchema(insert_default_rdpg_services) %s\n", err))
+	if err := db.QueryRow("SELECT name FROM rdpg.services WHERE name='rdpg' LIMIT 1;").Scan(&name); err != nil {
+		if err == sql.ErrNoRows {
+			if _, err = db.Exec(SQL["insert_default_rdpg_services"]); err != nil {
+				log.Error(fmt.Sprintf("rdpg.InitializeSchema(insert_default_rdpg_services) %s\n", err))
+				return err
+			}
+		} else {
+			log.Error(fmt.Sprintf("rdpg.InitializeSchema() %s\n", err))
 			return err
 		}
 	}
 
-	if err = db.Get(&s, "SELECT name FROM rdpg.plans WHERE name='small' LIMIT 1;"); err != nil {
-		log.Error(fmt.Sprintf("rdpg.InitializeSchema() %s\n", err))
-		return err
-	}
-	if s.Name != "small" {
-		if _, err = db.Exec(SQLStatements["insert_default_rdpg_plans"]); err != nil {
-			log.Error(fmt.Sprintf("rdpg.InitializeSchema(insert_default_rdpg_plans) %s\n", err))
+	if err = db.QueryRow("SELECT name FROM rdpg.plans WHERE name='small' LIMIT 1;").Scan(&name); err != nil {
+		if err == sql.ErrNoRows {
+			if _, err = db.Exec(SQL["insert_default_rdpg_plans"]); err != nil {
+				log.Error(fmt.Sprintf("rdpg.InitializeSchema(insert_default_rdpg_plans) %s\n", err))
+				return err
+			}
+		} else {
+			log.Error(fmt.Sprintf("rdpg.InitializeSchema() %s\n", err))
 			return err
 		}
 	}
