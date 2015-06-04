@@ -11,31 +11,31 @@ import (
 )
 
 func initSchema(db *sqlx.DB) (err error) {
-	log.Debug(fmt.Sprintf("rdpg.initializeSchema() for %s", rdpgURI))
+	log.Trace(fmt.Sprintf("rdpg.initializeSchema() for %s", rdpgURI))
 	// For each node connect to pgbdr and:
 	//   CreatDatabase('rdpg','postgres')
 	//   "ALTER USER postgres SUPERUSER CREATEDB CREATEROLE INHERIT"
 	//   CreateReplicationGroup('rdpg')
 
-	log.Debug(fmt.Sprintf("rdpg.InitializeSchema() %s", SQL["rdpg_extensions"]))
+	log.Trace(fmt.Sprintf("rdpg.InitializeSchema() %s", SQL["rdpg_extensions"]))
 	if _, err = db.Exec(SQL["rdpg_extensions"]); err != nil {
 		log.Error(fmt.Sprintf("rdpg.InitializeSchema(rdpg_extensions) %s\n", err))
 		return err
 	}
 
-	log.Debug(fmt.Sprintf("rdpg.InitializeSchema() %s", SQL["rdpg_schemas"]))
+	log.Trace(fmt.Sprintf("rdpg.InitializeSchema() %s", SQL["rdpg_schemas"]))
 	if _, err = db.Exec(SQL["rdpg_schemas"]); err != nil {
 		log.Error(fmt.Sprintf("rdpg.InitializeSchema(create_table_services) %s\n", err))
 	}
 
 	// TODO: Check if table exists first and only run if it doesn't.
-	log.Debug(fmt.Sprintf("rdpg.InitializeSchema() %s", SQL["create_table_cfsb_services"]))
+	log.Trace(fmt.Sprintf("rdpg.InitializeSchema() %s", SQL["create_table_cfsb_services"]))
 	if _, err = db.Exec(SQL["create_table_cfsb_services"]); err != nil {
 		log.Error(fmt.Sprintf("rdpg.InitializeSchema(create_table_cfsb_services) %s\n", err))
 	}
 
 	// TODO: Check if table exists first and only run if it doesn't.
-	log.Debug(fmt.Sprintf("rdpg.InitializeSchema() %s", SQL["create_table_cfsb_plans"]))
+	log.Trace(fmt.Sprintf("rdpg.InitializeSchema() %s", SQL["create_table_cfsb_plans"]))
 	if _, err = db.Exec(SQL["create_table_cfsb_plans"]); err != nil {
 		log.Error(fmt.Sprintf("rdpg.InitializeSchema(create_table_plans) %s\n", err))
 	}
