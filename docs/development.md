@@ -47,14 +47,14 @@ export \
   RDPG_SB_USER=cf \
   RDPG_SB_PASS=cf \
   RDPG_ADMIN_PORT=58888 \
-  RDPG_PG_URI="postgresql://postgres:admin@127.0.0.1:55432/rdpg?sslmode=disable&connect_timeout=5&fallback_application_name=rdpg-agent" 
+  RDPG_ADMIN_PG_URI="postgresql://postgres:admin@127.0.0.1:55432/rdpg?sslmode=disable&connect_timeout=5&fallback_application_name=rdpg-agent" 
 ```
 
 When running the agent locally, you will need to first deploy the 
 `rdpg-boshrelease` and then forward the PostgreSQL from the release to your localhost,
 
 ```sh
-ssh  -L 5432:127.0.0.1:55432 vcap@10.244.2.2 # BOSH Lite Password: c1oudc0w
+ssh  -L 55432:127.0.0.1:5432 vcap@10.244.2.2 # BOSH Lite Password: c1oudc0w
 ```
 
 To run the agent during development,
@@ -62,6 +62,21 @@ To run the agent during development,
 ```sh
 go run rdpg-agent.go
 ```
+
+To see what is in the rdpg database once the ssh port forwarding is setup, 
+on your local machine,
+
+```sh
+psql -U postgres --host 127.0.0.1 --port 55432 rdpg
+```
+And then examine the database,
+```sh
+set search_path=rdpg;
+\dt
+select * from services;
+select * from plans;
+```
+
 # Testing
 Once GoConvey is running visit [The Web UI](http://127.0.0.1:8080)
 

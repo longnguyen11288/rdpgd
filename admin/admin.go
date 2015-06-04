@@ -1,16 +1,25 @@
 package admin
 
 import (
+	"fmt"
 	"net/http"
 
-	"github.com/wayneeseguin/rdpg-agent/pg"
+	"github.com/wayneeseguin/rdpg-agent/log"
+	"github.com/wayneeseguin/rdpg-agent/rdpg"
 )
 
 func Check(check string) (status int) {
+	r := rdpg.New()
+	err := r.Open()
+	if err != nil {
+		log.Error(fmt.Sprintf("Error opening %s", r.URI))
+		return http.StatusInternalServerError
+	}
+
 	switch check {
 	case "ha_pb_pg":
 		var numNodes int
-		pg.DB.Get(&numNodes, "SELECT count(node_name) FROM bdr.bdr_nodes;")
+		r.DB.Get(&numNodes, "SELECT count(node_name) FROM bdr.bdr_nodes;")
 		if numNodes < 3 {
 			return http.StatusInternalServerError
 		}
@@ -19,4 +28,3 @@ func Check(check string) (status int) {
 	}
 	return http.StatusOK
 }
-

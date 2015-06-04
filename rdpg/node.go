@@ -1,13 +1,12 @@
 package rdpg
 
 import (
-	"fmt"
 	"errors"
+	"fmt"
 
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
 	"github.com/wayneeseguin/rdpg-agent/log"
-	"github.com/wayneeseguin/rdpg-agent/pg"
 )
 
 type Node struct {
@@ -24,7 +23,7 @@ func NewNode(host, port, user, database string) Node {
 	return Node{Host: host, Port: port, User: user, Database: database}
 }
 
-func (n * Node) Connect() (db *sqlx.DB, err error) {
+func (n *Node) Connect() (db *sqlx.DB, err error) {
 	uri := n.URI()
 	db, err = sqlx.Connect("postgres", uri)
 	if err != nil {
@@ -34,7 +33,6 @@ func (n * Node) Connect() (db *sqlx.DB, err error) {
 	return db, nil
 }
 
-
 func UserExists() {
 	//"SELECT rolname FROM pg_roles WHERE rolname='${rdpgUser}';"
 }
@@ -42,6 +40,7 @@ func UserExists() {
 func DatabaseExists() {
 	//"SELECT datname FROM pg_database WHERE datname='${rdpgDB}';"
 }
+
 func CreateDatabase() {
 	//
 }
@@ -49,6 +48,7 @@ func CreateDatabase() {
 func CreateExtension(name string) {
 	//("CREATE EXTENSION IF NOT EXISTS ?;",name)
 }
+
 func (n *Node) URI() (uri string) {
 	d := "postgres://%s@%s:%s/%s?fallback_application_name=%s&connect_timeout=%s&sslmode=%s"
 	uri = fmt.Sprintf(d, n.User, n.Host, n.Port, n.Database, "rdpg-agent", "5", "disable")
@@ -56,7 +56,7 @@ func (n *Node) URI() (uri string) {
 }
 
 func (n *Node) CreateDatabase(name string) (err error) {
-	db,err := n.Connect()
+	db, err := n.Connect()
 	if err != nil {
 		log.Error(fmt.Sprintf("rdpg.Node#CreateDatabase(): %s\n", err))
 		return err
@@ -72,7 +72,7 @@ func (n *Node) CreateDatabase(name string) (err error) {
 
 func (n *Node) CreateUser(name, password string) (err error) {
 	if n.User != "postgres" {
-		return errors.New(fmt.Sprintf("Node user is not postgres, can not create a user with '%s'",n.User))
+		return errors.New(fmt.Sprintf("Node user is not postgres, can not create a user with '%s'", n.User))
 	}
 
 	uri := n.URI()
@@ -100,7 +100,7 @@ func (n *Node) CreateUser(name, password string) (err error) {
 	if err != nil {
 		return err
 	}
-	_, err = pg.DB.Exec("ALTER USER ? ENCRYPTED PASSWORD '?';", name, password)
+	_, err = db.Exec("ALTER USER ? ENCRYPTED PASSWORD '?';", name, password)
 	if err != nil {
 		return err
 	}

@@ -7,10 +7,6 @@ import (
 	"github.com/wayneeseguin/rdpg-agent/log"
 )
 
-type RDPG struct {
-	URI string
-}
-
 // TODO: RDPG Struct => RDPG Struct, allowing for multiple instances of RDPG
 func NewRDPG(uri string) *RDPG {
 	if uri == "" || uri[0:13] != "postgresql://" {
