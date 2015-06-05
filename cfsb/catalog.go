@@ -26,13 +26,13 @@ func (c *Catalog) Fetch() error {
 	}
 
 	//now loop over services and populate their Plans
-	//	for i, _ := range c.Services {
-	//		service := &c.Services[i]
-	//		err = r.DB.Select(&service.Plans, `SELECT id,name,description FROM cfsb.plans;`)
-	//		if err != nil {
-	//			log.Error(fmt.Sprintf("Catalog#Fetch() selectiing from cfsb.plans %s", err.Error()))
-	//			return err
-	//		}
-	//	}
+	for i, _ := range c.Services {
+		service := &c.Services[i]
+		err = r.DB.Select(&service.Plans, `SELECT id,name,description FROM cfsb.plans;`)
+		if err != nil {
+			log.Error(fmt.Sprintf("Catalog#Fetch() selectiing from cfsb.plans %s", err.Error()))
+			return err
+		}
+	}
 	return nil
 }
