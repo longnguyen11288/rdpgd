@@ -24,6 +24,5 @@ func (c *Catalog) Fetch() error {
 		log.Error(fmt.Sprintf("Catalog#Fetch() selecting from cfsb.services %s", err.Error()))
 		return err
 	}
-
 	return nil
 }
