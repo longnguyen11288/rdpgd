@@ -25,5 +25,14 @@ func (c *Catalog) Fetch() error {
 		return err
 	}
 
+	//now loop over services and populate their Plans
+	for i, _ := range c.Services {
+		service := &c.Services[i]
+		err = r.DB.Select(&service.Plans, `SELECT id,name,description,metadata FROM cfsb.service:`)
+		if err != nil {
+			log.Error(fmt.Sprintf("Catalog#Fetch() selectiing from cfsb.palns %s", err.Error()))
+			return err
+		}
+	}
 	return nil
 }
