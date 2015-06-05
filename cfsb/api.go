@@ -39,9 +39,9 @@ func API() {
 	CFSBMux := http.NewServeMux()
 	router := mux.NewRouter()
 	router.HandleFunc("/v2/catalog", httpAuth(CatalogHandler))
-	router.HandleFunc("/v2/service_instances/{id}", httpAuth(InstanceHandler))
+	router.HandleFunc("/v2/service_instances/{instance_id}", httpAuth(InstanceHandler))
 	CFSBMux.Handle("/", router)
-	router.HandleFunc("/v2/service_instances/{instance_id}/service_bindings/{id}", httpAuth(BindingHandler))
+	router.HandleFunc("/v2/service_instances/{instance_id}/service_bindings/{binding_id}", httpAuth(BindingHandler))
 
 	http.Handle("/", router)
 	http.ListenAndServe(":"+sbPort, CFSBMux)
@@ -84,8 +84,6 @@ func isAuthorized(username, password string) bool {
 (FC) GET /v2/catalog
 */
 func CatalogHandler(w http.ResponseWriter, request *http.Request) {
-	// r.Header().Get("X-Broker-Api-Version") #  "2.4")
-
 	switch request.Method {
 	case "GET":
 		c := Catalog{}
@@ -113,15 +111,32 @@ func CatalogHandler(w http.ResponseWriter, request *http.Request) {
 (RI) DELETE /v2/service_instances/:id
 */
 func InstanceHandler(w http.ResponseWriter, request *http.Request) {
-	// r.Header().Get("X-Broker-Api-Version") #  "2.4")
+	vars := mux.Vars(request)
+	instance := NewInstance(
+		vars["instance_id"],
+		vars["service_id"],
+		vars["plan_id"],
+		vars["organization_guid"],
+		vars["space_guid"],
+	)
+	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 	switch request.Method {
-	case "PUT": // Provision Instance
-		fmt.Fprintf(w, "{}")
-	case "DELETE": // Remove Instance
-		fmt.Fprintf(w, "{}")
+	case "PUT":
+		err := instance.Provision()
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			fmt.Fprintf(w, `{"status": %d,"description": %s}`, http.StatusInternalServerError, err)
+		}
+
+	case "DELETE":
+		err := instance.Remove()
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			fmt.Fprintf(w, `{"status": %d,"description": %s}`, http.StatusInternalServerError, err)
+		}
 	default:
 		w.WriteHeader(http.StatusMethodNotAllowed)
-		fmt.Fprintf(w, "{}")
+		fmt.Fprintf(w, `{"status": %d}`, http.StatusMethodNotAllowed)
 	}
 }
 
@@ -130,7 +145,9 @@ func InstanceHandler(w http.ResponseWriter, request *http.Request) {
 (RB) DELETE /v2/service_instances/:instance_id/service_bindings/:id
 */
 func BindingHandler(w http.ResponseWriter, request *http.Request) {
-	// r.Header().Get("X-Broker-Api-Version") #  "2.4")
+	//vars := mux.Vars(request)
+	//category := vars["instance_id"]
+	//category := vars["binding_id"]
 	switch request.Method {
 	case "PUT":
 		// binding.Create(instance_id,binding_id)

@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+
+export \
+  LOGLEVEL=trace \
+  RDPG_SB_PORT=8888 \
+  RDPG_SB_USER=cf \
+  RDPG_SB_PASS=cf \
+  RDPG_ADMIN_PORT=58888 \
+  RDPG_ADMIN_PG_URI="postgresql://postgres:admin@127.0.0.1:55432/rdpg?sslmode=disable&connect_timeout=5&fallback_application_name=rdpg-agent"
+
+action=$1
+
+case ${action} in
+  (run)
+    exec go run rdpg-agent.go
+    ;;
+  (tunnel)
+    echo "Password when prompted: c1oudc0w"
+    exec ssh  -L 55432:127.0.0.1:5432 vcap@10.244.2.2
+    ;;
+  (test)
+    exec go test
+    ;;
+  (convey)
+    exec $GOPATH/bin/goconvey
+    ;;
+esac

@@ -37,11 +37,9 @@ func (r *RDPG) CreateUser(username, password string) error {
 			log.Error(fmt.Sprintf("CreateUser() %s", err))
 			return err
 		}
-
 		if _, err := db.Exec("CREATE USER ?;", username); err != nil {
 			log.Error(fmt.Sprintf("CreateUser() %s", err))
 		}
-
 		if _, err := db.Exec("ALTER USER ? ENCRYPTED PASSWORD '?';", username, password); err != nil {
 			log.Error(fmt.Sprintf("CreateUser() %s", err))
 		}
@@ -51,6 +49,7 @@ func (r *RDPG) CreateUser(username, password string) error {
 }
 
 func (r *RDPG) CreateDatabase(name, owner string) error {
+	// TODO: Drop Database on all nodes if err != nil for any operation below
 	for _, node := range r.Nodes() {
 		db, err := node.Connect()
 		if err != nil {
@@ -79,6 +78,7 @@ func (r *RDPG) CreateDatabase(name, owner string) error {
 
 func (r *RDPG) CreateReplicationGroup(dbname string) error {
 	nodes := r.Nodes()
+	// TODO: Drop Database on all nodes if err != nil for any operation below
 	for index, node := range nodes {
 		db, err := node.Connect()
 		if err != nil {
@@ -114,4 +114,20 @@ func (r *RDPG) connect() (dr *sqlx.DB, err error) {
 		return db, err
 	}
 	return db, nil
+}
+
+func (r *RDPG) DisableDatabase() (err error) {
+	return nil
+}
+
+func (r *RDPG) BackupDatabase() (err error) {
+	return nil
+}
+
+func (r *RDPG) DeleteDatabase() (err error) {
+	return nil
+}
+
+func (r *RDPG) DeleteUser() (err error) {
+	return nil
 }
