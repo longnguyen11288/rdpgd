@@ -181,7 +181,7 @@ func (r *RDPG) CreateReplicationGroup(dbname string) (err error) {
 			sq = fmt.Sprintf(`SELECT bdr.bdr_group_create(
 				local_node_name := '%s',
 				node_external_dsn := 'host=%s port=%s user=%s dbname=%s'
-			); `, name, node.Host, node.Port, node.User, node.Database)
+			); `, name, node.Host, node.Port, node.User, dbname)
 		} else {
 			sq = fmt.Sprintf(`SELECT bdr.bdr_group_join(
 				local_node_name := '%s',
@@ -189,7 +189,7 @@ func (r *RDPG) CreateReplicationGroup(dbname string) (err error) {
 				join_using_dsn := 'host=%s port=%s user=%s dbname=%s'
 			); `,
 				name, node.Host, node.Port, node.User, node.Database,
-				nodes[0].Host, nodes[0].Port, nodes[0].User, nodes[0].Database,
+				nodes[0].Host, nodes[0].Port, nodes[0].User, dbname,
 			)
 		}
 		log.Trace(fmt.Sprintf(`RDPG#CreateReplicationGroup() %s`, sq))
