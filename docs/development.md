@@ -69,12 +69,61 @@ on your local machine,
 ```sh
 psql -U postgres --host 127.0.0.1 --port 55432 rdpg
 ```
+
 And then examine the database,
+
 ```sh
 set search_path=rdpg;
 \dt
 select * from services;
 select * from plans;
+```
+
+## Convenience
+
+To create the above tunnel,
+```sh
+./rdpg-agent-dev tunnel
+```
+
+To go run the main go,
+```sh
+./rdpg-agent-dev run
+```
+
+To run the tests,
+```sh
+./rdpg-agent-dev test
+```
+
+To run the tests constantly using goconvey,
+```sh
+./rdpg-agent-dev convey
+```
+
+To run get catalog API,
+```sh
+./rdpg-agent-dev catalog
+```
+
+To run provision instance API,
+```sh
+./rdpg-agent-dev provision
+```
+
+To run bind instance API, using the instance UUID generated during provision,
+```sh
+./rdpg-agent-dev bind ${instanceId}
+```
+
+To run unbind instance API, using the instance UUID generated during provision,
+```sh
+./rdpg-agent-dev unbind ${instanceId}
+```
+
+To run deprovision instance API, using the instance UUID generated during provision,
+```sh
+./rdpg-agent-dev deprovision ${instanceId}
 ```
 
 # Testing
