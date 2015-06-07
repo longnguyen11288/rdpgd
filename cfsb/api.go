@@ -145,15 +145,29 @@ func InstanceHandler(w http.ResponseWriter, request *http.Request) {
 (RB) DELETE /v2/service_instances/:instance_id/service_bindings/:id
 */
 func BindingHandler(w http.ResponseWriter, request *http.Request) {
-	//vars := mux.Vars(request)
-	//category := vars["instance_id"]
-	//category := vars["binding_id"]
+	vars := mux.Vars(request)
 	switch request.Method {
 	case "PUT":
-		// binding.Create(instance_id,binding_id)
-		fmt.Fprintf(w, "{}")
+		binding, err := CreateBinding(vars["instance_id"], vars["binding_id"])
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			fmt.Fprintf(w, `{"status": %d,"description": %s}`, http.StatusInternalServerError, err)
+			return
+		}
+		j, err := json.Marshal(binding)
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			fmt.Fprintf(w, `{"status": %d,"description": %s}`, http.StatusInternalServerError, err)
+		} else {
+			w.WriteHeader(http.StatusOK)
+			w.Write(j)
+		}
 	case "DELETE":
-		// binding.Remove(instance_id,binding_id)
+		//err := RemoveBinding(vars["instance_id"], vars["binding_id"])
+		//if err != nil {
+		//  w.WriteHeader(http.StatusInternalServerError)
+		//fmt.Fprintf(w, `{"status": %d,"description": %s}`, http.StatusInternalServerError, err)
+		//}
 		fmt.Fprintf(w, "{}")
 	default:
 		w.WriteHeader(http.StatusMethodNotAllowed)

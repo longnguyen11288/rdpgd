@@ -102,62 +102,18 @@ func (r *RDPG) CreateUser(username, password string) (err error) {
 }
 
 func (r *RDPG) CreateDatabase(dbname, owner string) (err error) {
-	// TODO: Drop Database on all nodes if err != nil for any operation below
 	for _, node := range r.Nodes() {
-		node.Database = "postgres"
-		db, err := node.Connect()
+		err = node.CreateDatabase(dbname, owner)
 		if err != nil {
-			log.Error(fmt.Sprintf("rdpg#CreateDatabase() error connecting to database %s", err))
 			break
 		}
-
-		sq := fmt.Sprintf(`CREATE DATABASE %s WITH OWNER %s TEMPLATE template0 ENCODING 'UTF8'`, dbname, owner)
-		log.Trace(sq)
-		_, err = db.Query(sq)
-		if err != nil {
-			log.Error(fmt.Sprintf("rdpg#CreateDatabase() %s", err))
-			db.Close()
-			break
-		}
-
-		sq = fmt.Sprintf(`REVOKE ALL ON DATABASE "%s" FROM public`, dbname)
-		log.Trace(sq)
-		_, err = db.Exec(sq)
-		if err != nil {
-			log.Error(fmt.Sprintf("rdpg#CreateDatabase() %s", err))
-		}
-
-		sq = fmt.Sprintf(`GRANT ALL PRIVILEGES ON DATABASE %s TO %s`, dbname, owner)
-		log.Trace(sq)
-		_, err = db.Query(sq)
-		if err != nil {
-			log.Error(fmt.Sprintf("rdpg#CreateDatabase() %s", err))
-			db.Close()
-			break
-		}
-		db.Close()
 
 		node.Database = dbname
-		db, err = node.Connect()
+		err = node.CreateExtensions([]string{"btree_gist", "bdr"})
 		if err != nil {
-			log.Error(fmt.Sprintf("rdpg#CreateDatabase() %s :: %s", node.URI(), err))
 			break
 		}
 
-		_, err = db.Query(`CREATE EXTENSION IF NOT EXISTS btree_gist`)
-		if err != nil {
-			log.Error(fmt.Sprintf("rdpg#CreateDatabase() %s", err))
-			db.Close()
-			break
-		}
-
-		_, err = db.Query(`CREATE EXTENSION IF NOT EXISTS bdr`)
-		if err != nil {
-			log.Error(fmt.Sprintf("rdpg#CreateDatabase() %s", err))
-			db.Close()
-			break
-		}
-		db.Close()
 	}
 	if err != nil {
 		// Cleanup in BDR currently requires droping the database and trying again...

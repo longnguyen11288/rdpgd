@@ -12,39 +12,31 @@ import (
 
 func initSchema(db *sqlx.DB) (err error) {
 	log.Trace(fmt.Sprintf("rdpg.initializeSchema() for %s", rdpgURI))
+	// TODO: if 'rdpg' database DNE,
 	// For each node connect to pgbdr and:
 	//   CreatDatabase('rdpg','postgres')
 	//   "ALTER USER postgres SUPERUSER CREATEDB CREATEROLE INHERIT"
 	//   CreateReplicationGroup('rdpg')
 
-	log.Trace(fmt.Sprintf("rdpg.InitializeSchema() %s", SQL["rdpg_extensions"]))
-	if _, err = db.Exec(SQL["rdpg_extensions"]); err != nil {
-		log.Error(fmt.Sprintf("rdpg.InitializeSchema(rdpg_extensions) %s\n", err))
-		return err
+	keys := []string{
+		"rdpg_extensions",
+		"rdpg_schemas",
+		"create_table_cfsb_services",
+		"create_table_cfsb_plans",
+		"create_table_cfsb_instances",
+		"create_table_cfsb_bindings",
+		"create_table_cfsb_credentials",
 	}
-
-	log.Trace(fmt.Sprintf("rdpg.InitializeSchema() %s", SQL["rdpg_schemas"]))
-	if _, err = db.Exec(SQL["rdpg_schemas"]); err != nil {
-		log.Error(fmt.Sprintf("rdpg.InitializeSchema(create_table_services) %s\n", err))
-	}
-
+	// "create_table_rdpg_nodes"
+	// "create_table_monitoring_...
 	// TODO: Check if table exists first and only run if it doesn't.
-	log.Trace(fmt.Sprintf("rdpg.InitializeSchema() %s", SQL["create_table_cfsb_services"]))
-	if _, err = db.Exec(SQL["create_table_cfsb_services"]); err != nil {
-		log.Error(fmt.Sprintf("rdpg.InitializeSchema(create_table_cfsb_services) %s\n", err))
+	for _, key := range keys {
+		log.Trace(fmt.Sprintf("RDPG#InitializeSchema() SQL[%s]", key))
+		_, err = db.Exec(SQL[key])
+		if err != nil {
+			log.Error(fmt.Sprintf("RDPG#InitializeSchema() %s\n", err))
+		}
 	}
-
-	// TODO: Check if table exists first and only run if it doesn't.
-	log.Trace(fmt.Sprintf("rdpg.InitializeSchema() %s", SQL["create_table_cfsb_plans"]))
-	if _, err = db.Exec(SQL["create_table_cfsb_plans"]); err != nil {
-		log.Error(fmt.Sprintf("rdpg.InitializeSchema(create_table_plans) %s\n", err))
-	}
-
-	// TODO: Check if table exists first and only run if it doesn't.
-	//log.Trace(fmt.Sprintf("rdpg.InitializeSchema() %s", SQL["create_table_rdpg_nodes"]))
-	//if _, err = db.Exec(SQL["create_table_rdpg_nodes"]); err != nil {
-	//log.Error(fmt.Sprintf("rdpg.InitializeSchema(create_rdpg_nodes) %s\n", err))
-	//}
 
 	var name string
 

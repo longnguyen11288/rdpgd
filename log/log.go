@@ -43,14 +43,19 @@ func code(lvl string) int {
 	}
 }
 
+// create msg chan variable with some buffer
+func init() {
+	// start background worker listening on msg chan
+}
+
 func log(lvl, msg string) {
 	c := code(lvl)
 	if level <= c {
 		ts := time.Now().Format(time.RFC3339)
-		if c < 50 {
+		if c < 50 { // Log stderr messages direct and immediately
 			fmt.Fprintf(os.Stderr, "%s rdpg-agent %s %s\n", ts, lvl, msg)
 		} else {
-			// TODO: Standard output logs via channel.
+			// TODO: background worker for stdout messages via channel async
 			fmt.Fprintf(os.Stdout, "%s rdpg-agent %s %s\n", ts, lvl, msg)
 		}
 	}

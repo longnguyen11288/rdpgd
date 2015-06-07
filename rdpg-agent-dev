@@ -9,6 +9,7 @@ export \
   RDPG_ADMIN_PG_URI="postgresql://postgres:admin@127.0.0.1:55432/rdpg?sslmode=disable&connect_timeout=5&fallback_application_name=rdpg-agent"
 
 action=$1
+shift || echo "No action given!!"
 
 instanceId="$(uuidgen)",
 serviceId="$(uuidgen)",
@@ -33,9 +34,23 @@ case ${action} in
     exec $GOPATH/bin/goconvey
     ;;
   (provision)
-    set -v
-    exec curl http://cf:cf@127.0.0.1:8888/v2/service_instances/${instanceId} \
-      -X PUT -H "X-Broker-API-Version: 2.4" -H "Content-Type: application/json" \
+    set -x
+    curl -v -X PUT -H "X-Broker-API-Version: 2.4" -H "Content-Type: application/json" \
+      http://cf:cf@127.0.0.1:8888/v2/service_instances/${instanceId} \
       -d "{ \"service_id\": \"${serviceId}\", \"plan_id\": \"${planId}\", \"organization_guid\": \"${organizationId}\", \"space_guid\": \"${spaceId}\" }"
+    exit $?
+  ;;
+  (deprovision)
+    id=$1
+    curl -X DELETE -H "X-Broker-API-Version: 2.4" -v \
+      http://cf:cf@127.0.0.1:8888/v2/service_instances/${id}
+    ;;
+  (bind)
+    set -x
+    instanceId=$1
+    curl -v -X PUT -H "X-Broker-API-Version: 2.4" -H "Content-Type: application/json" \
+      http://cf:cf@127.0.0.1:8888/v2/service_instances/$instanceId/service_bindings/${bindingId} \
+      -d "{ \"service_id\": \"${serviceId}\", \"plan_id\": \"${planId}\", \"app_guid\": \"${appId}\"}"
+    exit $?
   ;;
 esac
