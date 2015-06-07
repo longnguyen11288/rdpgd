@@ -1,5 +1,11 @@
 #!/usr/bin/env bash
 
+get_catalog() {
+  curl ${1:-} -s -X GET -H "X-Broker-API-Version: 2.4" -H "Content-Type: application/json" \
+    http://cf:cf@127.0.0.1:8888/v2/catalog
+  echo
+}
+
 export \
   LOGLEVEL=trace \
   RDPG_SB_PORT=8888 \
@@ -11,10 +17,10 @@ export \
 action=$1
 shift || echo "No action given!!"
 
-instanceId="$(uuidgen)",
-serviceId="$(uuidgen)",
-planId="$(uuidgen)",
-organizationId="$(uuidgen)",
+instanceId="$(uuidgen)"
+serviceId="$(uuidgen)"
+planId="$(uuidgen)"
+organizationId="$(uuidgen)"
 spaceId="$(uuidgen)"
 bindingId="$(uuidgen)"
 appId="$(uuidgen)"
@@ -33,12 +39,19 @@ case ${action} in
   (convey)
     exec $GOPATH/bin/goconvey
     ;;
+  (catalog)
+    set -v
+    get_catalog -v
+    exit $?
+  ;;
   (provision)
-    set -x
-    curl -v -X PUT -H "X-Broker-API-Version: 2.4" -H "Content-Type: application/json" \
+    cl=($(get_catalog | tr -d '"' | tr ',' ' '))
+    planId=$(for r in ${cl[@]} ; do echo $r | awk -F: '/plan_id/{print $2}' ; done)
+    serviceId=$(for r in ${cl[@]} ; do echo $r | awk -F: '/service_id/{print $2}' ; done)
+    set -v -x
+    curl -v -s -X PUT -H "X-Broker-API-Version: 2.4" -H "Content-Type: application/json" \
       http://cf:cf@127.0.0.1:8888/v2/service_instances/${instanceId} \
       -d "{ \"service_id\": \"${serviceId}\", \"plan_id\": \"${planId}\", \"organization_guid\": \"${organizationId}\", \"space_guid\": \"${spaceId}\" }"
-    exit $?
   ;;
   (deprovision)
     id=$1
@@ -46,11 +59,10 @@ case ${action} in
       http://cf:cf@127.0.0.1:8888/v2/service_instances/${id}
     ;;
   (bind)
-    set -x
     instanceId=$1
+    set -x -v
     curl -v -X PUT -H "X-Broker-API-Version: 2.4" -H "Content-Type: application/json" \
       http://cf:cf@127.0.0.1:8888/v2/service_instances/$instanceId/service_bindings/${bindingId} \
       -d "{ \"service_id\": \"${serviceId}\", \"plan_id\": \"${planId}\", \"app_guid\": \"${appId}\"}"
-    exit $?
   ;;
 esac

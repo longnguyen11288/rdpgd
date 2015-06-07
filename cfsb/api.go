@@ -4,12 +4,13 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"os"
 	"strings"
 
 	"github.com/gorilla/mux"
-	_ "github.com/wayneeseguin/rdpg-agent/log"
+	"github.com/wayneeseguin/rdpg-agent/log"
 )
 
 var (
@@ -84,6 +85,7 @@ func isAuthorized(username, password string) bool {
 (FC) GET /v2/catalog
 */
 func CatalogHandler(w http.ResponseWriter, request *http.Request) {
+	log.Trace(fmt.Sprintf("%s /v2/catalog", request.Method))
 	switch request.Method {
 	case "GET":
 		c := Catalog{}
@@ -112,40 +114,83 @@ func CatalogHandler(w http.ResponseWriter, request *http.Request) {
 */
 func InstanceHandler(w http.ResponseWriter, request *http.Request) {
 	vars := mux.Vars(request)
-	instance := NewInstance(
-		vars["instance_id"],
-		vars["service_id"],
-		vars["plan_id"],
-		vars["organization_guid"],
-		vars["space_guid"],
-	)
+	log.Trace(fmt.Sprintf("%s /v2/service_instances/:instance_id :: %+v", request.Method, vars))
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+
 	switch request.Method {
 	case "PUT":
-		err := instance.Provision()
+		type instanceRequest struct {
+			ServiceId      string `json:"service_id"`
+			Plan           string `json:"plan_id"`
+			OrganizationId string `json:"organization_guid"`
+			SpaceId        string `json:"space_guid"`
+		}
+		ir := instanceRequest{}
+		body, err := ioutil.ReadAll(request.Body)
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			fmt.Fprintf(w, `{"status": %d,"description": %s}`, http.StatusInternalServerError, err)
+			return
 		}
-
+		err = json.Unmarshal(body, &ir)
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			fmt.Fprintf(w, `{"status": %d,"description": %s}`, http.StatusInternalServerError, err)
+			return
+		}
+		instance, err := NewInstance(
+			vars["instance_id"],
+			ir.ServiceId,
+			ir.Plan,
+			ir.OrganizationId,
+			ir.SpaceId,
+		)
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			fmt.Fprintf(w, `{"status": %d,"description": %s}`, http.StatusInternalServerError, err)
+			return
+		}
+		err = instance.Provision()
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			fmt.Fprintf(w, `{"status": %d,"description": %s}`, http.StatusInternalServerError, err)
+			return
+		}
 	case "DELETE":
-		err := instance.Remove()
+		instance, err := FindInstance(vars["instance_id"])
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			fmt.Fprintf(w, `{"status": %d,"description": %s}`, http.StatusInternalServerError, err)
+			return
 		}
+		err = instance.Remove()
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			fmt.Fprintf(w, `{"status": %d,"description": %s}`, http.StatusInternalServerError, err)
+			return
+		}
+		w.WriteHeader(http.StatusOK)
+		fmt.Fprintf(w, `{"status": %d,"description": "Successfully Deprovisioned %s"}`, http.StatusOK, instance.InstanceId)
 	default:
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		fmt.Fprintf(w, `{"status": %d}`, http.StatusMethodNotAllowed)
+		return
 	}
 }
 
 /*
-(CB) PUT /v2/service_instances/:instance_id/service_bindings/:id
-(RB) DELETE /v2/service_instances/:instance_id/service_bindings/:id
+(CB) PUT /v2/service_instances/:instance_id/service_bindings/:binding_id
+(RB) DELETE /v2/service_instances/:instance_id/service_bindings/:binding_id
 */
 func BindingHandler(w http.ResponseWriter, request *http.Request) {
 	vars := mux.Vars(request)
+	body, err := ioutil.ReadAll(request.Body)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		fmt.Fprintf(w, `{"status": %d,"description": %s}`, http.StatusInternalServerError, err)
+		return
+	}
+	log.Trace(fmt.Sprintf("%s /v2/service_instances/:instance_id/service_bindings/:binding_id :: %+v :: %s", request.Method, vars, body))
 	switch request.Method {
 	case "PUT":
 		binding, err := CreateBinding(vars["instance_id"], vars["binding_id"])

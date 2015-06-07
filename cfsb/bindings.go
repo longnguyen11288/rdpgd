@@ -20,17 +20,18 @@ type Credentials struct {
 }
 
 type Binding struct {
-	Id         string      `json:"binding_id"`
+	BindingId  string      `json:"binding_id"`
 	InstanceId string      `json:"instance_id"`
 	Creds      Credentials `json:"credentials"`
 }
 
 func CreateBinding(instanceId, bindingId string) (binding *Binding, err error) {
+	log.Trace(fmt.Sprintf("cfsb.CreateBinding(%s,%s)", instanceId, bindingId))
 	instance, err := FindInstance(instanceId)
 	if err != nil {
 		return
 	}
-	binding = &Binding{Id: bindingId, InstanceId: instanceId}
+	binding = &Binding{BindingId: bindingId, InstanceId: instanceId}
 
 	dns := instance.ExternalDNS()
 	s := strings.Split(dns, ":")
@@ -47,15 +48,16 @@ func CreateBinding(instanceId, bindingId string) (binding *Binding, err error) {
 	}
 
 	r := rdpg.New()
+	r.OpenDB()
 
 	sq := `INSERT INTO cfsb.bindings (instance_id,binding_id) VALUES ($1,$2);`
-	_, err = r.DB.Query(sq, binding.InstanceId, binding.Id)
+	_, err = r.DB.Query(sq, binding.InstanceId, binding.BindingId)
 	if err != nil {
 		log.Error(fmt.Sprintf(`cfsb.CreateBinding() %s\n`, err))
 	}
 
 	sq = `INSERT INTO cfsb.credentials (instance_id,binding_id,host,port,uname,pass,dbname) VALUES ($1,$2,$3,$4,$5,$6,$7);`
-	_, err = r.DB.Query(sq, binding.InstanceId, binding.Id, binding.Creds.Host, binding.Creds.Port, binding.Creds.UserName)
+	_, err = r.DB.Query(sq, binding.InstanceId, binding.BindingId, binding.Creds.Host, binding.Creds.Port, binding.Creds.UserName, binding.Creds.Password, binding.Creds.Database)
 	if err != nil {
 		log.Error(fmt.Sprintf(`cfsb.CreateBinding() %s\n`, err))
 	}

@@ -10,7 +10,7 @@ import (
 
 func Check(check string) (status int) {
 	r := rdpg.New()
-	err := r.Open()
+	err := r.OpenDB()
 	if err != nil {
 		log.Error(fmt.Sprintf("Error opening %s", r.URI))
 		return http.StatusInternalServerError

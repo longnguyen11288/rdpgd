@@ -1,6 +1,7 @@
 package cfsb
 
 import (
+	"errors"
 	"fmt"
 	"regexp"
 	"strings"
@@ -10,7 +11,6 @@ import (
 )
 
 type Instance struct {
-	Id             int    `db:"id"`
 	InstanceId     string `db:"instance_id"`
 	ServiceId      string `db:"service_id"`
 	PlanId         string `db:"plan_id"`
@@ -21,38 +21,60 @@ type Instance struct {
 	Pass           string `db:"pass"`
 }
 
-func NewInstance(instanceId, serviceId, planId, organizationId, spaceId string) *Instance {
+func NewInstance(instanceId, serviceId, planId, organizationId, spaceId string) (i *Instance, err error) {
 	re := regexp.MustCompile("[^A-Za-z0-9_]")
-	identifier := strings.ToLower(string(re.ReplaceAll([]byte(instanceId), []byte(""))))
+	id := instanceId
+	identifier := strings.ToLower(string(re.ReplaceAll([]byte(id), []byte(""))))
 
-	return &Instance{
+	i = &Instance{
 		InstanceId:     strings.ToLower(instanceId),
 		ServiceId:      strings.ToLower(serviceId),
 		PlanId:         strings.ToLower(planId),
 		OrganizationId: strings.ToLower(organizationId),
+		SpaceId:        strings.ToLower(spaceId),
 		Database:       "d" + identifier,
 		User:           "u" + identifier,
 	}
+	if i.ServiceId == "" {
+		err = errors.New("Service ID is required.")
+		return
+	}
+	if i.PlanId == "" {
+		err = errors.New("Plan ID is required.")
+		return
+	}
+	if i.OrganizationId == "" {
+		err = errors.New("OrganizationId ID is required.")
+		return
+	}
+	if i.SpaceId == "" {
+		err = errors.New("Space ID is required.")
+		return
+	}
+	return
 }
 
 func FindInstance(instanceId string) (i *Instance, err error) {
 	r := rdpg.New()
-	r.Open()
-	i = &Instance{}
-	sq := `SELECT 
-id, instance_id, service_id, plan_id, organization_id, space_id, dbname, uname, pass 
-FROM cfsb.instances WHERE instance_id=$1 LIMIT 1;`
-	err = r.DB.Get(&i, sq, instanceId)
+	r.OpenDB()
+	in := Instance{}
+	sq := `SELECT instance_id, service_id, plan_id, organization_id, space_id, dbname, uname, pass 
+FROM cfsb.instances WHERE instance_id=lower($1) LIMIT 1;`
+	err = r.DB.Get(&in, sq, instanceId)
 	if err != nil {
+		// TODO: Change messaging if err is sql.NoRows then say couldn't find instance with instanceId
 		log.Error(fmt.Sprintf("cfsb.FindInstance(%s) %s\n", instanceId, err))
 	}
 	r.DB.Close()
+	i = &in
 	return i, err
 }
 
 func (i *Instance) Provision() (err error) {
 	i.Pass = strings.ToLower(strings.Replace(rdpg.NewUUID().String(), "-", "", -1))
 	r := rdpg.New()
+
+	// TODO: Alter this logic based on "plan"
 
 	err = r.CreateUser(i.User, i.Pass)
 	if err != nil {
@@ -72,12 +94,12 @@ func (i *Instance) Provision() (err error) {
 		return err
 	}
 
-	r.Open()
+	r.OpenDB()
 	sq := `INSERT INTO cfsb.instances 
 (instance_id, service_id, plan_id, organization_id, space_id, dbname, uname, pass)
 VALUES ($1,$2,$3,$4,$5,$6,$7,$8);
 `
-	_, err = r.DB.Query(sq, i.Id, i.ServiceId, i.PlanId, i.OrganizationId, i.SpaceId, i.Database, i.User, i.Pass)
+	_, err = r.DB.Query(sq, i.InstanceId, i.ServiceId, i.PlanId, i.OrganizationId, i.SpaceId, i.Database, i.User, i.Pass)
 	if err != nil {
 		log.Error(fmt.Sprintf(`Instance#Provision() %s\n`, err))
 	}

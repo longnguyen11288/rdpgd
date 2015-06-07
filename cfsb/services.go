@@ -2,6 +2,7 @@ package cfsb
 
 type Service struct {
 	Id              string          `db:"id" json:"id"`
+	ServiceId       string          `db:"service_id" json:"service_id"`
 	Name            string          `db:"name" json:"name"`
 	Description     string          `db:"description" json:"description"`
 	Bindable        bool            `db:"bindable" json:"bindable"`

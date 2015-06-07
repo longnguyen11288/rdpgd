@@ -48,7 +48,7 @@ func main() {
 	}()
 
 	r := rdpg.New()
-	err := r.Open()
+	err := r.OpenDB()
 	if err != nil {
 		log.Error(err.Error())
 		proc, _ := os.FindProcess(os.Getpid())

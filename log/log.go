@@ -48,6 +48,7 @@ func init() {
 	// start background worker listening on msg chan
 }
 
+// TODO: Logs also go to database for ops dashboard inspection.
 func log(lvl, msg string) {
 	c := code(lvl)
 	if level <= c {
@@ -61,6 +62,7 @@ func log(lvl, msg string) {
 	}
 }
 
+// TODO: Alter log functions to be able to pass args through to fmt.Sprintf()
 func Trace(msg string) {
 	log("trace", msg)
 }

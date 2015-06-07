@@ -49,7 +49,7 @@ func New() *RDPG {
 	return &RDPG{URI: rdpgURI}
 }
 
-func (r *RDPG) Open() error {
+func (r *RDPG) OpenDB() error {
 	if r.DB == nil {
 		db, err := sqlx.Connect("postgres", r.URI)
 		if err != nil {

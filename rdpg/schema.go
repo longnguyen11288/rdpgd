@@ -11,7 +11,7 @@ import (
 )
 
 func initSchema(db *sqlx.DB) (err error) {
-	log.Trace(fmt.Sprintf("rdpg.initializeSchema() for %s", rdpgURI))
+	log.Trace(fmt.Sprintf("RDPG#initSchema() for %s", rdpgURI))
 	// TODO: if 'rdpg' database DNE,
 	// For each node connect to pgbdr and:
 	//   CreatDatabase('rdpg','postgres')
@@ -27,14 +27,12 @@ func initSchema(db *sqlx.DB) (err error) {
 		"create_table_cfsb_bindings",
 		"create_table_cfsb_credentials",
 	}
-	// "create_table_rdpg_nodes"
-	// "create_table_monitoring_...
 	// TODO: Check if table exists first and only run if it doesn't.
 	for _, key := range keys {
-		log.Trace(fmt.Sprintf("RDPG#InitializeSchema() SQL[%s]", key))
+		log.Trace(fmt.Sprintf("RDPG#initSchema() SQL[%s]", key))
 		_, err = db.Exec(SQL[key])
 		if err != nil {
-			log.Error(fmt.Sprintf("RDPG#InitializeSchema() %s\n", err))
+			log.Error(fmt.Sprintf("RDPG#initSchema() %s\n", err))
 		}
 	}
 
@@ -44,11 +42,11 @@ func initSchema(db *sqlx.DB) (err error) {
 	if err := db.QueryRow("SELECT name FROM cfsb.services WHERE name='rdpg' LIMIT 1;").Scan(&name); err != nil {
 		if err == sql.ErrNoRows {
 			if _, err = db.Exec(SQL["insert_default_cfsb_services"]); err != nil {
-				log.Error(fmt.Sprintf("rdpg.InitializeSchema(insert_default_cfsb_services) %s\n", err))
+				log.Error(fmt.Sprintf("rdpg.initSchema(insert_default_cfsb_services) %s\n", err))
 				return err
 			}
 		} else {
-			log.Error(fmt.Sprintf("rdpg.InitializeSchema() %s\n", err))
+			log.Error(fmt.Sprintf("rdpg.initSchema() %s\n", err))
 			return err
 		}
 	}
@@ -57,11 +55,11 @@ func initSchema(db *sqlx.DB) (err error) {
 	if err = db.QueryRow("SELECT name FROM cfsb.plans WHERE name='small' LIMIT 1;").Scan(&name); err != nil {
 		if err == sql.ErrNoRows {
 			if _, err = db.Exec(SQL["insert_default_cfsb_plans"]); err != nil {
-				log.Error(fmt.Sprintf("rdpg.InitializeSchema(insert_default_cfsb_plans) %s\n", err))
+				log.Error(fmt.Sprintf("rdpg.initSchema(insert_default_cfsb_plans) %s\n", err))
 				return err
 			}
 		} else {
-			log.Error(fmt.Sprintf("rdpg.InitializeSchema() %s\n", err))
+			log.Error(fmt.Sprintf("rdpg.initSchema() %s\n", err))
 			return err
 		}
 	}
