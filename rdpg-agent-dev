@@ -68,8 +68,7 @@ case ${action} in
     instanceId=$1
     set -x -v
     curl -v -X DELETE -H "X-Broker-API-Version: 2.4" -H "Content-Type: application/json" \
-      http://cf:cf@127.0.0.1:8888/v2/service_instances/$instanceId/service_bindings/${bindingId} \
-      -d "{ \"service_id\": \"${serviceId}\", \"plan_id\": \"${planId}\", \"app_guid\": \"${appId}\"}"
+      http://cf:cf@127.0.0.1:8888/v2/service_instances/$instanceId/service_bindings/${bindingId}
     echo
     ;;
   (deprovision)

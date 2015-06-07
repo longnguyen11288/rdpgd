@@ -29,7 +29,7 @@ func FindPlan(planId string) (plan *Plan, err error) {
 	sq := `SELECT id,name,description FROM cfsb.plans WHERE id=$1 LIMIT 1;`
 	err = r.DB.Get(&plan, sq, planId)
 	if err != nil {
-		log.Error(fmt.Sprintf("cfsb.FindPlan(%s) %s\n", planId, err))
+		log.Error(fmt.Sprintf("cfsb.FindPlan(%s) %s", planId, err))
 	}
 	r.DB.Close()
 	return plan, err

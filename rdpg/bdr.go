@@ -21,7 +21,7 @@ func NewRDPG(uri string) *RDPG {
 func (r *RDPG) connect() (db *sqlx.DB, err error) {
 	db, err = sqlx.Connect("postgres", r.URI)
 	if err != nil {
-		log.Error(fmt.Sprintf("rdpg.Node#Connect(): %s:\n%s\n", r.URI, err))
+		log.Error(fmt.Sprintf("rdpg.Node#Connect(): %s :: %s", r.URI, err))
 	}
 	return db, err
 }
@@ -83,7 +83,7 @@ func (r *RDPG) CreateUser(username, password string) (err error) {
 		log.Trace(sq)
 		_, err = db.Exec(sq)
 		if err != nil {
-			log.Error(fmt.Sprintf("RDPG#CreateUser() %s %s\n", username, err))
+			log.Error(fmt.Sprintf("RDPG#CreateUser() %s %s", username, err))
 			db.Close()
 			return err
 		}
@@ -92,7 +92,7 @@ func (r *RDPG) CreateUser(username, password string) (err error) {
 		log.Trace(sq)
 		_, err = db.Exec(sq)
 		if err != nil {
-			log.Error(fmt.Sprintf("RDPG#CreateUser() %s %s\n", username, err))
+			log.Error(fmt.Sprintf("RDPG#CreateUser() %s %s", username, err))
 			db.Close()
 			return err
 		}
@@ -176,17 +176,17 @@ func (r *RDPG) DisableDatabase(dbname string) (err error) {
 		sq := fmt.Sprintf(`UPDATE pg_database SET datallowconn = 'false' WHERE datname = '%s'`, dbname)
 		_, err = db.Exec(sq)
 		if err != nil {
-			log.Error(fmt.Sprintf("RDPG#DeleteDatabase(): DISALLOW %s :: %s\n", dbname, err))
+			log.Error(fmt.Sprintf("RDPG#DeleteDatabase(): DISALLOW %s :: %s", dbname, err))
 		}
 
 		_, err = db.Exec(`SELECT pg_terminate_backend(pg_stat_activity.pid) FROM pg_stat_activity WHERE pg_stat_activity.datname = $1 AND pid <> pg_backend_pid()`, dbname)
 		if err != nil {
-			log.Error(fmt.Sprintf("RDPG#DeleteDatabase(): TERMINATE %s :: %s\n", dbname, err))
+			log.Error(fmt.Sprintf("RDPG#DeleteDatabase(): TERMINATE %s :: %s", dbname, err))
 		}
 
 		_, err = db.Exec("ALTER DATABASE %s OWNER TO %s", dbname, node.User)
 		if err != nil {
-			log.Error(fmt.Sprintf("RDPG#DeleteDatabase(): TERMINATE %s :: %s\n", dbname, err))
+			log.Error(fmt.Sprintf("RDPG#DeleteDatabase(): TERMINATE %s :: %s", dbname, err))
 		}
 	}
 
@@ -210,7 +210,7 @@ func (r *RDPG) DropDatabase(dbname string) (err error) {
 		sq := fmt.Sprintf(`DROP database IF EXISTS "%s"`, dbname)
 		_, err = db.Exec(sq)
 		if err != nil {
-			log.Error(fmt.Sprintf("RDPG#DeleteDatabase(): DROP %s :: %s\n", dbname, err))
+			log.Error(fmt.Sprintf("RDPG#DeleteDatabase(): DROP %s :: %s", dbname, err))
 		}
 	}
 	return nil
@@ -227,7 +227,7 @@ func (r *RDPG) DropUser(name string) (err error) {
 		sq := fmt.Sprintf(`DROP USER %s`, name)
 		_, err = db.Exec(sq)
 		if err != nil {
-			log.Error(fmt.Sprintf("RDPG#DeleteUser(): %s :: %s\n", name, err))
+			log.Error(fmt.Sprintf("RDPG#DeleteUser(): %s :: %s", name, err))
 		}
 	}
 	return nil

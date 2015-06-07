@@ -63,7 +63,7 @@ FROM cfsb.instances WHERE instance_id=lower($1) LIMIT 1;`
 	err = r.DB.Get(&in, sq, instanceId)
 	if err != nil {
 		// TODO: Change messaging if err is sql.NoRows then say couldn't find instance with instanceId
-		log.Error(fmt.Sprintf("cfsb.FindInstance(%s) %s\n", instanceId, err))
+		log.Error(fmt.Sprintf("cfsb.FindInstance(%s) %s", instanceId, err))
 	}
 	r.DB.Close()
 	i = &in
@@ -78,19 +78,19 @@ func (i *Instance) Provision() (err error) {
 
 	err = r.CreateUser(i.User, i.Pass)
 	if err != nil {
-		log.Error(fmt.Sprintf("Instance#Provision() %s\n", err))
+		log.Error(fmt.Sprintf("Instance#Provision() %s", err))
 		return err
 	}
 
 	err = r.CreateDatabase(i.Database, i.User)
 	if err != nil {
-		log.Error(fmt.Sprintf("Instance#Provision() %s\n", err))
+		log.Error(fmt.Sprintf("Instance#Provision() %s", err))
 		return err
 	}
 
 	err = r.CreateReplicationGroup(i.Database)
 	if err != nil {
-		log.Error(fmt.Sprintf("Instance#Provision() %s\n", err))
+		log.Error(fmt.Sprintf("Instance#Provision() %s", err))
 		return err
 	}
 
@@ -101,7 +101,7 @@ VALUES ($1,$2,$3,$4,$5,$6,$7,$8);
 `
 	_, err = r.DB.Query(sq, i.InstanceId, i.ServiceId, i.PlanId, i.OrganizationId, i.SpaceId, i.Database, i.User, i.Pass)
 	if err != nil {
-		log.Error(fmt.Sprintf(`Instance#Provision() %s\n`, err))
+		log.Error(fmt.Sprintf(`Instance#Provision() %s`, err))
 	}
 
 	return nil

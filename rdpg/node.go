@@ -27,7 +27,7 @@ func (n *Node) Connect() (db *sqlx.DB, err error) {
 	uri := n.URI()
 	db, err = sqlx.Connect(`postgres`, uri) // n.LocalDSN)
 	if err != nil {
-		log.Error(fmt.Sprintf(`rdpg.Node#Connect(): %s:\n%s\n`, uri, err))
+		log.Error(fmt.Sprintf(`rdpg.Node#Connect(): %s :: %s`, uri, err))
 		return db, err
 	}
 	return db, nil
@@ -69,18 +69,18 @@ func (n *Node) CreateUser(name, password string) (err error) {
 	uri := n.URI()
 	db, err := sqlx.Connect(`postgres`, uri)
 	if err != nil {
-		log.Error(fmt.Sprintf(`Node#CreateUser() %s %s\n`, uri, err))
+		log.Error(fmt.Sprintf(`Node#CreateUser() %s %s`, uri, err))
 		return err
 	}
 	defer db.Close()
 
 	err = db.Get(&name, `SELECT rolname FROM pg_roles WHERE rolname=? LIMIT 1;`, name)
 	if err != nil {
-		log.Error(fmt.Sprintf(`Node#CreateUser() %s\n`, err))
+		log.Error(fmt.Sprintf(`Node#CreateUser() %s`, err))
 		return err
 	}
 	if name != `` {
-		log.Debug(fmt.Sprintf(`User '%s' already exists, not creating.\n`, name))
+		log.Debug(fmt.Sprintf(`User '%s' already exists, not creating.`, name))
 		return nil
 	}
 
@@ -88,19 +88,19 @@ func (n *Node) CreateUser(name, password string) (err error) {
 	result, err := db.Exec(sq)
 	rows, _ := result.RowsAffected()
 	if rows > 0 {
-		log.Debug(fmt.Sprintf(`Created user: %s\n`, name))
+		log.Debug(fmt.Sprintf(`Created user: %s`, name))
 	}
 	if err != nil {
-		log.Error(fmt.Sprintf(`Node#CreateUser() %s\n`, err))
+		log.Error(fmt.Sprintf(`Node#CreateUser() %s`, err))
 		return err
 	}
 	sq = fmt.Sprintf(`ALTER USER %s ENCRYPTED PASSWORD %s;`, name, password)
 	_, err = db.Exec(sq)
 	if err != nil {
-		log.Error(fmt.Sprintf(`Node#CreateUser() %s\n`, err))
+		log.Error(fmt.Sprintf(`Node#CreateUser() %s`, err))
 		return err
 	}
-	log.Debug(fmt.Sprintf(`Set password for user: ?\n`, name))
+	log.Debug(fmt.Sprintf(`Set password for user: ?`, name))
 
 	return nil
 }

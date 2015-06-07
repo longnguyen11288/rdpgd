@@ -36,7 +36,7 @@ func main() {
 
 	go func() {
 		for sig := range ch {
-			log.Info(fmt.Sprintf("Received %v, shutting down...\n", sig))
+			log.Info(fmt.Sprintf("Received %v, shutting down...", sig))
 			if _, err := os.Stat(pidFile); err == nil {
 				if err := os.Remove(pidFile); err != nil {
 					log.Error(err.Error())

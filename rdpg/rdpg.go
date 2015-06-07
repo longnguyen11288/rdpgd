@@ -28,7 +28,7 @@ func init() {
 
 	db, err := sqlx.Connect("postgres", rdpgURI)
 	if err != nil {
-		log.Error(fmt.Sprintf("Failed connecting to %s err: %s\n", rdpgURI, err))
+		log.Error(fmt.Sprintf("Failed connecting to %s err: %s", rdpgURI, err))
 		proc, _ := os.FindProcess(os.Getpid())
 		proc.Signal(syscall.SIGTERM)
 	}
@@ -37,7 +37,7 @@ func init() {
 	err = db.Ping()
 	if err != nil {
 		db.Close()
-		log.Error(fmt.Sprintf("Unable to Ping %s err: %s\n", rdpgURI, err))
+		log.Error(fmt.Sprintf("Unable to Ping %s err: %s", rdpgURI, err))
 		proc, _ := os.FindProcess(os.Getpid())
 		proc.Signal(syscall.SIGTERM)
 	}
@@ -53,7 +53,7 @@ func (r *RDPG) OpenDB() error {
 	if r.DB == nil {
 		db, err := sqlx.Connect("postgres", r.URI)
 		if err != nil {
-			log.Error(fmt.Sprintf("Failed connecting to %s err: %s\n", rdpgURI, err))
+			log.Error(fmt.Sprintf("Failed connecting to %s err: %s", rdpgURI, err))
 			return err
 		}
 		r.DB = db
@@ -62,7 +62,7 @@ func (r *RDPG) OpenDB() error {
 		if err != nil {
 			db, err := sqlx.Connect("postgres", r.URI)
 			if err != nil {
-				log.Error(fmt.Sprintf("Failed connecting to %s err: %s\n", rdpgURI, err))
+				log.Error(fmt.Sprintf("Failed connecting to %s err: %s", rdpgURI, err))
 				proc, _ := os.FindProcess(os.Getpid())
 				proc.Signal(syscall.SIGTERM)
 				return err

@@ -32,7 +32,7 @@ func initSchema(db *sqlx.DB) (err error) {
 		log.Trace(fmt.Sprintf("RDPG#initSchema() SQL[%s]", key))
 		_, err = db.Exec(SQL[key])
 		if err != nil {
-			log.Error(fmt.Sprintf("RDPG#initSchema() %s\n", err))
+			log.Error(fmt.Sprintf("RDPG#initSchema() %s", err))
 		}
 	}
 
@@ -42,11 +42,11 @@ func initSchema(db *sqlx.DB) (err error) {
 	if err := db.QueryRow("SELECT name FROM cfsb.services WHERE name='rdpg' LIMIT 1;").Scan(&name); err != nil {
 		if err == sql.ErrNoRows {
 			if _, err = db.Exec(SQL["insert_default_cfsb_services"]); err != nil {
-				log.Error(fmt.Sprintf("rdpg.initSchema(insert_default_cfsb_services) %s\n", err))
+				log.Error(fmt.Sprintf("rdpg.initSchema(insert_default_cfsb_services) %s", err))
 				return err
 			}
 		} else {
-			log.Error(fmt.Sprintf("rdpg.initSchema() %s\n", err))
+			log.Error(fmt.Sprintf("rdpg.initSchema() %s", err))
 			return err
 		}
 	}
@@ -55,11 +55,11 @@ func initSchema(db *sqlx.DB) (err error) {
 	if err = db.QueryRow("SELECT name FROM cfsb.plans WHERE name='small' LIMIT 1;").Scan(&name); err != nil {
 		if err == sql.ErrNoRows {
 			if _, err = db.Exec(SQL["insert_default_cfsb_plans"]); err != nil {
-				log.Error(fmt.Sprintf("rdpg.initSchema(insert_default_cfsb_plans) %s\n", err))
+				log.Error(fmt.Sprintf("rdpg.initSchema(insert_default_cfsb_plans) %s", err))
 				return err
 			}
 		} else {
-			log.Error(fmt.Sprintf("rdpg.initSchema() %s\n", err))
+			log.Error(fmt.Sprintf("rdpg.initSchema() %s", err))
 			return err
 		}
 	}

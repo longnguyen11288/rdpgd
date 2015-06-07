@@ -53,13 +53,13 @@ func CreateBinding(instanceId, bindingId string) (binding *Binding, err error) {
 	sq := `INSERT INTO cfsb.bindings (instance_id,binding_id) VALUES ($1,$2);`
 	_, err = r.DB.Query(sq, binding.InstanceId, binding.BindingId)
 	if err != nil {
-		log.Error(fmt.Sprintf(`cfsb.CreateBinding() %s\n`, err))
+		log.Error(fmt.Sprintf(`cfsb.CreateBinding() %s`, err))
 	}
 
 	sq = `INSERT INTO cfsb.credentials (instance_id,binding_id,host,port,uname,pass,dbname) VALUES ($1,$2,$3,$4,$5,$6,$7);`
 	_, err = r.DB.Query(sq, binding.InstanceId, binding.BindingId, binding.Creds.Host, binding.Creds.Port, binding.Creds.UserName, binding.Creds.Password, binding.Creds.Database)
 	if err != nil {
-		log.Error(fmt.Sprintf(`cfsb.CreateBinding() %s\n`, err))
+		log.Error(fmt.Sprintf(`cfsb.CreateBinding() %s`, err))
 	}
 
 	return
