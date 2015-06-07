@@ -2,6 +2,7 @@ package rdpg
 
 import (
 	"fmt"
+	"strings"
 
 	"database/sql"
 
@@ -21,18 +22,33 @@ func initSchema(db *sqlx.DB) (err error) {
 	keys := []string{
 		"rdpg_extensions",
 		"rdpg_schemas",
+	}
+	for _, key := range keys {
+		log.Trace(fmt.Sprintf("RDPG#initSchema() SQL[%s]", key))
+		_, err = db.Exec(SQL[key])
+		if err != nil {
+			log.Error(fmt.Sprintf("RDPG#initSchema() %s", err))
+		}
+	}
+
+	keys = []string{
 		"create_table_cfsb_services",
 		"create_table_cfsb_plans",
 		"create_table_cfsb_instances",
 		"create_table_cfsb_bindings",
 		"create_table_cfsb_credentials",
 	}
-	// TODO: Check if table exists first and only run if it doesn't.
 	for _, key := range keys {
-		log.Trace(fmt.Sprintf("RDPG#initSchema() SQL[%s]", key))
-		_, err = db.Exec(SQL[key])
-		if err != nil {
-			log.Error(fmt.Sprintf("RDPG#initSchema() %s", err))
+		k := strings.Split(key, "_")
+		sq := fmt.Sprintf(`SELECT to_regclass('%s.%s');`, k[2], k[3])
+		log.Trace(fmt.Sprintf("RDPG#initSchema() %s", sq))
+		_, err = db.Exec(sq)
+		if err != nil { // does not exist
+			log.Trace(fmt.Sprintf("RDPG#initSchema() SQL[%s]", key))
+			_, err = db.Exec(SQL[key])
+			if err != nil {
+				log.Error(fmt.Sprintf("RDPG#initSchema() %s", err))
+			}
 		}
 	}
 

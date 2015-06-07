@@ -1,5 +1,39 @@
 #!/usr/bin/env bash
 
+fail() { echo $* ; exit 1 ; }
+
+release() {
+  if [[ -z ${GITHUB_API_ACCESS_TOKEN} ]]
+  then fail "GITHUB_API_ACCESS_TOKEN is not set in the environment."
+  fi
+
+  if ! command -v goxc &>/dev/null
+  then 
+    go get -u github.com/laher/goxc
+  fi
+
+  if ! [[ -s .goxc.json ]]
+  then
+    cat > .goxc.json <<EOF
+    {
+        "PackageVersion": "${version}",
+    }
+EOF
+  fi
+
+  $GOPATH/bin/goxc -pv ${version} -bc="linux,x86_64 !arm !windows !darwin"
+  fail "TODO: use goxc to build linux_x86_64 tarball."
+  releaseMsg="Release of version ${version}"
+  git tag -a ${version} -m "${releaseMsg}"
+  for remote in $(git remote)
+  do git push ${remote} --tags || true
+  done
+  releaseJSON=$(printf '{"tag_name": "%s","target_commitish": "master","name": "%s","body": "%s","draft": false,"prerelease": false}' ${version} ${version} ${releaseMsg})
+  releaseURI="https://api.github.com/repos/wayneeseguin/rdpg-agent/releases?access_token=${GITHUB_API_ACCESS_TOKEN}"
+
+  curl ${releaseURI} -d "${releaseJSON}"
+}
+
 get_catalog() {
   curl ${1:-} -s -X GET -H "X-Broker-API-Version: 2.4" -H "Content-Type: application/json" \
     http://cf:cf@127.0.0.1:8888/v2/catalog
@@ -76,5 +110,12 @@ case ${action} in
     curl -X DELETE -H "X-Broker-API-Version: 2.4" -v \
       http://cf:cf@127.0.0.1:8888/v2/service_instances/${id}
     echo
+    ;;
+  (release)
+    version="$1"
+    if [[ -z ${version} ]]
+    then fail "A version must be given for the release."
+    fi
+    release
     ;;
 esac
