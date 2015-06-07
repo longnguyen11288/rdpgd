@@ -10,6 +10,14 @@ export \
 
 action=$1
 
+instanceId="$(uuidgen)",
+serviceId="$(uuidgen)",
+planId="$(uuidgen)",
+organizationId="$(uuidgen)",
+spaceId="$(uuidgen)"
+bindingId="$(uuidgen)"
+appId="$(uuidgen)"
+
 case ${action} in
   (run)
     exec go run rdpg-agent.go
@@ -24,4 +32,10 @@ case ${action} in
   (convey)
     exec $GOPATH/bin/goconvey
     ;;
+  (provision)
+    set -v
+    exec curl http://cf:cf@127.0.0.1:8888/v2/service_instances/${instanceId} \
+      -X PUT -H "X-Broker-API-Version: 2.4" -H "Content-Type: application/json" \
+      -d "{ \"service_id\": \"${serviceId}\", \"plan_id\": \"${planId}\", \"organization_guid\": \"${organizationId}\", \"space_guid\": \"${spaceId}\" }"
+  ;;
 esac

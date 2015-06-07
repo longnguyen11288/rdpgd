@@ -40,6 +40,12 @@ func initSchema(db *sqlx.DB) (err error) {
 		log.Error(fmt.Sprintf("rdpg.InitializeSchema(create_table_plans) %s\n", err))
 	}
 
+	// TODO: Check if table exists first and only run if it doesn't.
+	//log.Trace(fmt.Sprintf("rdpg.InitializeSchema() %s", SQL["create_table_rdpg_nodes"]))
+	//if _, err = db.Exec(SQL["create_table_rdpg_nodes"]); err != nil {
+	//log.Error(fmt.Sprintf("rdpg.InitializeSchema(create_rdpg_nodes) %s\n", err))
+	//}
+
 	var name string
 
 	// TODO: Move initial population of services out of rdpg-agent to Admin API.

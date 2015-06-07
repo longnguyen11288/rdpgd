@@ -47,4 +47,6 @@ INSERT INTO cfsb.plans (service_id,name,description,free)
 VALUES ((SELECT id AS svc_id FROM cfsb.services WHERE name='rdpg' LIMIT 1), 
 'small', 'A small shared reliable PostgreSQL database.', true);
 `,
+	"bdr_nodes":     `SELECT * FROM bdr.bdr_nodes;`,
+	"bdr_nodes_dsn": `SELECT node_local_dsn FROM bdr.bdr_nodes;`,
 }
