@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"os"
 	"os/signal"
+	"strconv"
 	"syscall"
 
 	"github.com/wayneeseguin/rdpg-agent/admin"
@@ -14,19 +15,25 @@ import (
 	"github.com/wayneeseguin/rdpg-agent/workers"
 )
 
+const RDPG_AGENT_VERSION = "0.0.3"
+
 var (
 	pidFile string
 )
 
 func init() {
 	pidFile = os.Getenv("RDPG_AGENT_PIDFILE")
+	ParseArgs()
 }
 
+// TODO: Allow for --version
 func main() {
 	if pidFile != "" {
-		err := ioutil.WriteFile(pidFile, []byte(string(os.Getpid())), 0644)
+		pid := os.Getpid()
+		log.Debug(fmt.Sprintf("Writing pid %d to %s", pid, pidFile))
+		err := ioutil.WriteFile(pidFile, []byte(strconv.Itoa(pid)), 0644)
 		if err != nil {
-			log.Error(err.Error())
+			log.Error(fmt.Sprintf(`Error while writing pid '%d' to '%s' :: %s`, pid, pidFile, err))
 			os.Exit(1)
 		}
 	}
@@ -60,4 +67,59 @@ func main() {
 	go admin.API()
 
 	workers.Run()
+}
+
+func ParseArgs() {
+	for index, arg := range os.Args {
+		if index == 0 {
+			continue
+		}
+		switch arg {
+		case "init":
+			r := rdpg.New()
+			err := r.OpenDB()
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "%s\n", err)
+				os.Exit(1)
+			}
+
+			err = r.InitSchema()
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "%s\n", err)
+				os.Exit(1)
+			}
+			os.Exit(0)
+		case "version", "--version", "-version":
+			fmt.Fprintf(os.Stdout, "%s\n", RDPG_AGENT_VERSION)
+			os.Exit(0)
+		case "help", "-h", "?", "--help":
+			usage()
+			os.Exit(0)
+		default:
+			usage()
+			os.Exit(1)
+		}
+	}
+}
+
+func usage() {
+	fmt.Fprintf(os.Stdout, `
+rdpg-agent
+
+Usage:
+
+  rdpg-agent [Flag(s)] <Action>
+
+Actions:
+
+  init     Initialize rdpg database schema
+  version  print rdpg-agent version
+  help     print this message
+
+Flags:
+
+  --version  print rdpg-agent version
+  --help     print this message
+
+`)
 }

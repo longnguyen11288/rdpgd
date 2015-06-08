@@ -6,20 +6,22 @@ import (
 
 	"database/sql"
 
-	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
 	"github.com/wayneeseguin/rdpg-agent/log"
 )
 
-func initSchema(db *sqlx.DB) (err error) {
-	var name string
-
+// TODO: This should only be run on one node...
+func (r *RDPG) InitSchema() (err error) {
 	log.Trace(fmt.Sprintf("RDPG#initSchema() for %s", rdpgURI))
 	// TODO: if 'rdpg' database DNE,
 	// For each node connect to pgbdr and:
 	//   CreatDatabase('rdpg','postgres')
 	//   "ALTER USER postgres SUPERUSER CREATEDB CREATEROLE INHERIT"
 	//   CreateReplicationGroup('rdpg')
+
+	var name string
+
+	db := r.DB
 
 	keys := []string{
 		"rdpg_extensions",

@@ -41,8 +41,6 @@ func init() {
 		proc, _ := os.FindProcess(os.Getpid())
 		proc.Signal(syscall.SIGTERM)
 	}
-
-	initSchema(db)
 }
 
 func New() *RDPG {

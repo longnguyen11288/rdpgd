@@ -2,7 +2,14 @@
 
 fail() { echo $* ; exit 1 ; }
 
-release() {
+dev_release() {
+  go get -u github.com/laher/goxc
+  go get -u github.com/aktau/github-release
+  $GOPATH/bin/goxc -pv ${version}
+  echo "Release Archive Generated: .releases/${version}/rdpg-agent_${version}_linux_amd64.tar.gz"
+}
+
+final_release() {
   set -v
   set -x 
   if [[ -z ${GITHUB_TOKEN} ]]
@@ -41,7 +48,7 @@ get_catalog() {
 }
 
 export \
-  LOGLEVEL=trace \
+  RDPG_AGENT_LOGLEVEL=trace \
   RDPG_SB_PORT=8888 \
   RDPG_SB_USER=cf \
   RDPG_SB_PASS=cf \
@@ -109,11 +116,18 @@ case ${action} in
       http://cf:cf@127.0.0.1:8888/v2/service_instances/${id}
     echo
     ;;
-  (release)
+  (dev_release)
     version="$1"
     if [[ -z ${version} ]]
     then fail "A version must be given for the release."
     fi
-    release
+    dev_release
+    ;;
+  (final_release)
+    version="$1"
+    if [[ -z ${version} ]]
+    then fail "A version must be given for the release."
+    fi
+    final_release
     ;;
 esac
