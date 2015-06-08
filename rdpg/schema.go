@@ -12,6 +12,8 @@ import (
 )
 
 func initSchema(db *sqlx.DB) (err error) {
+	var name string
+
 	log.Trace(fmt.Sprintf("RDPG#initSchema() for %s", rdpgURI))
 	// TODO: if 'rdpg' database DNE,
 	// For each node connect to pgbdr and:
@@ -40,19 +42,22 @@ func initSchema(db *sqlx.DB) (err error) {
 	}
 	for _, key := range keys {
 		k := strings.Split(key, "_")
-		sq := fmt.Sprintf(`SELECT to_regclass('%s.%s');`, k[2], k[3])
+		sq := fmt.Sprintf(`SELECT table_name FROM information_schema.tables where table_schema='%s' AND table_name='%s';`, k[2], k[3])
 		log.Trace(fmt.Sprintf("RDPG#initSchema() %s", sq))
-		_, err = db.Exec(sq)
-		if err != nil { // does not exist
-			log.Trace(fmt.Sprintf("RDPG#initSchema() SQL[%s]", key))
-			_, err = db.Exec(SQL[key])
-			if err != nil {
-				log.Error(fmt.Sprintf("RDPG#initSchema() %s", err))
+		if err := db.QueryRow(sq).Scan(&name); err != nil {
+			if err == sql.ErrNoRows {
+				log.Trace(fmt.Sprintf("RDPG#initSchema() SQL[%s]", key))
+				_, err = db.Exec(SQL[key])
+				if err != nil {
+					log.Error(fmt.Sprintf("RDPG#initSchema() %s", err))
+				}
+			} else {
+				log.Error(fmt.Sprintf("rdpg.initSchema() %s", err))
+				return err
 			}
 		}
-	}
 
-	var name string
+	}
 
 	// TODO: Move initial population of services out of rdpg-agent to Admin API.
 	if err := db.QueryRow("SELECT name FROM cfsb.services WHERE name='rdpg' LIMIT 1;").Scan(&name); err != nil {
