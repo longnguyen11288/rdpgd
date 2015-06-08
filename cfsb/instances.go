@@ -11,14 +11,15 @@ import (
 )
 
 type Instance struct {
-	InstanceId     string `db:"instance_id"`
-	ServiceId      string `db:"service_id"`
-	PlanId         string `db:"plan_id"`
-	OrganizationId string `db:"organization_id"`
-	SpaceId        string `db:"space_id"`
-	Database       string `db:"dbname"`
-	User           string `db:"uname"`
-	Pass           string `db:"pass"`
+	Id             string `db:"id"`
+	InstanceId     string `db:"instance_id" json:"instance_id"`
+	ServiceId      string `db:"service_id" json:"service_id"`
+	PlanId         string `db:"plan_id" json:"plan_id"`
+	OrganizationId string `db:"organization_id" json:"organization_id"`
+	SpaceId        string `db:"space_id" json:"space_id"`
+	Database       string `db:"dbname" json:"dbname"`
+	User           string `db:"uname" json:"uname"`
+	Pass           string `db:"pass" json:"pass"`
 }
 
 func NewInstance(instanceId, serviceId, planId, organizationId, spaceId string) (i *Instance, err error) {
