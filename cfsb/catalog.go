@@ -13,27 +13,31 @@ type Catalog struct {
 	Services []Service `json:"services"`
 }
 
-func (c *Catalog) Fetch() error {
+func (c *Catalog) Fetch() (err error) {
 	r := rdpg.New()
-	err := r.OpenDB()
+	err = r.OpenDB()
 	if err != nil {
 		log.Error(fmt.Sprintf("Failed fetching catalog from database: %s", err))
-		return err
+		return
 	}
+	db := r.DB
 
-	err = r.DB.Select(&c.Services, `SELECT service_id,name,description,bindable,dashboard_client FROM cfsb.services;`)
+	err = db.Select(&c.Services, `SELECT service_id,name,description,bindable FROM cfsb.services;`)
 	if err != nil {
 		log.Error(fmt.Sprintf("Catalog#Fetch() selecting from cfsb.services %s", err.Error()))
-		return err
+		return
 	}
 
+	// TODO: Account for plans being associated with a service.
 	for i, _ := range c.Services {
 		service := &c.Services[i]
-		err = r.DB.Select(&service.Plans, `SELECT plan_id,name,description FROM cfsb.plans;`)
+		err = db.Select(&service.Plans, `SELECT plan_id,name,description FROM cfsb.plans;`)
 		if err != nil {
-			log.Error(fmt.Sprintf("Catalog#Fetch() selectiing from cfsb.plans %s", err.Error()))
-			return err
+			log.Error(fmt.Sprintf("Catalog#Fetch() Service Plans %s", err.Error()))
+			return
 		}
+		c.Services[i].Tags = []string{"rdpg", "postgresql"}
+		// c.Services[i].Dashboard = DashboardClient{}
 	}
-	return nil
+	return
 }

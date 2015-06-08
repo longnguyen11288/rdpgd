@@ -48,7 +48,7 @@ get_catalog() {
 }
 
 export \
-  RDPG_AGENT_LOGLEVEL=trace \
+  RDPG_AGENT_LOG_LEVEL=trace \
   RDPG_SB_PORT=8888 \
   RDPG_SB_USER=cf \
   RDPG_SB_PASS=cf \

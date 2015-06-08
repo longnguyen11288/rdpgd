@@ -14,8 +14,8 @@ type PlanDetails struct {
 }
 
 type Plan struct {
-	Id          string      `db:"plan_id" json:"id"`
-	PlanId      string      `db:"plan_id" json:"plan_id"`
+	Id          string      `db:"id"`
+	PlanId      string      `db:"plan_id" json:"id"`
 	Name        string      `db:"name" json:"name"`
 	Description string      `db:"description" json:"description"`
 	Metadata    PlanDetails `json:"metadata"`

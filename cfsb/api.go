@@ -57,16 +57,19 @@ func httpAuth(h http.HandlerFunc) http.HandlerFunc {
 
 		auth := strings.SplitN(request.Header["Authorization"][0], " ", 2)
 		if len(auth) != 2 || auth[0] != "Basic" {
+			log.Error(fmt.Sprintf("httpAuth(): Unhandled Authorization Type, Expected Basic"))
 			http.Error(w, "Unhandled Authroization Type, Expected Basic\n", http.StatusBadRequest)
 			return
 		}
 		payload, err := base64.StdEncoding.DecodeString(auth[1])
 		if err != nil {
+			log.Error(fmt.Sprintf("httpAuth(): Authorization Failed"))
 			http.Error(w, "Authorization Failed\n", http.StatusUnauthorized)
 			return
 		}
 		nv := strings.SplitN(string(payload), ":", 2)
 		if (len(nv) != 2) || !isAuthorized(nv[0], nv[1]) {
+			log.Error(fmt.Sprintf("httpAuth(): Authorization Failed"))
 			http.Error(w, "Authorization Failed\n", http.StatusUnauthorized)
 			return
 		}
@@ -93,18 +96,23 @@ func CatalogHandler(w http.ResponseWriter, request *http.Request) {
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			w.Write([]byte(err.Error()))
+			return
 		}
 		jsonCatalog, err := json.Marshal(c)
 		if err != nil {
+			log.Error(fmt.Sprintf("%s /v2/catalog %s", request.Method, err))
 			w.WriteHeader(http.StatusInternalServerError)
 			w.Write([]byte(err.Error()))
+			return
 		} else {
+			w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 			w.WriteHeader(http.StatusOK)
 			w.Write(jsonCatalog)
 		}
 	default:
 		w.WriteHeader(http.StatusMethodNotAllowed)
-		fmt.Fprintf(w, "{}")
+		fmt.Fprintf(w, `{"status": %d,"description": "Allowed Methods: GET"}`, http.StatusMethodNotAllowed)
+		return
 	}
 }
 
@@ -128,16 +136,19 @@ func InstanceHandler(w http.ResponseWriter, request *http.Request) {
 		ir := instanceRequest{}
 		body, err := ioutil.ReadAll(request.Body)
 		if err != nil {
+			log.Error(fmt.Sprintf("%s /v2/service_instances/:instance_id %s", request.Method, err))
 			w.WriteHeader(http.StatusInternalServerError)
 			fmt.Fprintf(w, `{"status": %d,"description": %s}`, http.StatusInternalServerError, err)
 			return
 		}
 		err = json.Unmarshal(body, &ir)
 		if err != nil {
+			log.Error(fmt.Sprintf("%s /v2/service_instances/:instance_id %s", request.Method, err))
 			w.WriteHeader(http.StatusInternalServerError)
 			fmt.Fprintf(w, `{"status": %d,"description": %s}`, http.StatusInternalServerError, err)
 			return
 		}
+
 		instance, err := NewInstance(
 			vars["instance_id"],
 			ir.ServiceId,
@@ -146,16 +157,22 @@ func InstanceHandler(w http.ResponseWriter, request *http.Request) {
 			ir.SpaceId,
 		)
 		if err != nil {
+			log.Error(fmt.Sprintf("%s /v2/service_instances/:instance_id %s", request.Method, err))
 			w.WriteHeader(http.StatusInternalServerError)
 			fmt.Fprintf(w, `{"status": %d,"description": %s}`, http.StatusInternalServerError, err)
 			return
 		}
+
 		err = instance.Provision()
 		if err != nil {
+			log.Error(fmt.Sprintf("%s /v2/service_instances/:instance_id %s", request.Method, err))
 			w.WriteHeader(http.StatusInternalServerError)
 			fmt.Fprintf(w, `{"status": %d,"description": %s}`, http.StatusInternalServerError, err)
 			return
 		}
+		w.WriteHeader(http.StatusOK)
+		fmt.Fprintf(w, `{"status": %d,"description": "Instance Provisioned Successfully"}`, http.StatusOK)
+		return
 	case "DELETE":
 		instance, err := FindInstance(vars["instance_id"])
 		if err != nil {
@@ -173,7 +190,7 @@ func InstanceHandler(w http.ResponseWriter, request *http.Request) {
 		fmt.Fprintf(w, `{"status": %d,"description": "Successfully Deprovisioned %s"}`, http.StatusOK, instance.InstanceId)
 	default:
 		w.WriteHeader(http.StatusMethodNotAllowed)
-		fmt.Fprintf(w, `{"status": %d}`, http.StatusMethodNotAllowed)
+		fmt.Fprintf(w, `{"status": %d,"description": "Allowed Methods: PUT, DELETE"}`, http.StatusMethodNotAllowed)
 		return
 	}
 }
@@ -195,17 +212,20 @@ func BindingHandler(w http.ResponseWriter, request *http.Request) {
 	case "PUT":
 		binding, err := CreateBinding(vars["instance_id"], vars["binding_id"])
 		if err != nil {
+			log.Error(fmt.Sprintf("%s /v2/service_instances/:instance_id/service_bindings/:binding_id %s", request.Method, err))
 			w.WriteHeader(http.StatusInternalServerError)
 			fmt.Fprintf(w, `{"status": %d,"description": %s}`, http.StatusInternalServerError, err)
 			return
 		}
 		j, err := json.Marshal(binding)
 		if err != nil {
+			log.Error(fmt.Sprintf("%s /v2/service_instances/:instance_id/service_bindings/:binding_id %s", request.Method, err))
 			w.WriteHeader(http.StatusInternalServerError)
 			fmt.Fprintf(w, `{"status": %d,"description": %s}`, http.StatusInternalServerError, err)
 		} else {
 			w.WriteHeader(http.StatusOK)
 			w.Write(j)
+			return
 		}
 	case "DELETE":
 		//err := RemoveBinding(vars["instance_id"], vars["binding_id"])
@@ -213,9 +233,11 @@ func BindingHandler(w http.ResponseWriter, request *http.Request) {
 		//  w.WriteHeader(http.StatusInternalServerError)
 		//fmt.Fprintf(w, `{"status": %d,"description": %s}`, http.StatusInternalServerError, err)
 		//}
-		fmt.Fprintf(w, "{}")
+		w.WriteHeader(http.StatusInternalServerError)
+		fmt.Fprintf(w, `{"status": %d,"description": "NOT YET IMPLEMENTED"}`, http.StatusInternalServerError)
 	default:
 		w.WriteHeader(http.StatusMethodNotAllowed)
-		fmt.Fprintf(w, "{}")
+		fmt.Fprintf(w, `{"status": %d,"description": "Allowed Methods: PUT, DELETE"}`, http.StatusMethodNotAllowed)
+		return
 	}
 }

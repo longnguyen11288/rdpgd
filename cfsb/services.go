@@ -1,15 +1,15 @@
 package cfsb
 
 type Service struct {
-	Id              string         `db:"id"`
-	ServiceId       string         `db:"service_id" json:"id"`
-	Name            string         `db:"name" json:"name"`
-	Description     string         `db:"description" json:"description"`
-	Bindable        bool           `db:"bindable" json:"bindable"`
-	DashboardClient string         `db:"dashboard_client" json:"dashboard_client"`
-	Tags            []string       `json:"tags"`
-	Metadata        ServiceDetails `json:"metadata"`
-	Plans           []*Plan        `json:"plans"`
+	Id          string         `db:"id"`
+	ServiceId   string         `db:"service_id" json:"id"`
+	Name        string         `db:"name" json:"name"`
+	Description string         `db:"description" json:"description"`
+	Bindable    bool           `db:"bindable" json:"bindable"`
+	Tags        []string       `json:"tags"`
+	Metadata    ServiceDetails `json:"metadata"`
+	Plans       []*Plan        `json:"plans"`
+	//DashboardClient   DashboardClient `json:"dashboard_client,omitempty"`
 }
 
 type ServiceDetails struct {
@@ -29,4 +29,10 @@ type TileDetails struct {
 	ProviderDisplayName string `db:"provider" json:"providerdisplayname"`
 	DocumentationUrl    string `db:"documentationurl" json:"documentationurl"`
 	SupportUrl          string `db:"supporturl" json:"supporturl"`
+}
+
+type DashboardClient struct {
+	ClientId     string `json:"id,omitempty"`
+	ClientSecret string `json:"secret,omitempty"`
+	RedirectURI  string `json:"redirect_uri,omitempty"`
 }
