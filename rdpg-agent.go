@@ -15,9 +15,8 @@ import (
 	"github.com/wayneeseguin/rdpg-agent/workers"
 )
 
-const RDPG_AGENT_VERSION = "0.0.3"
-
 var (
+	VERSION string
 	pidFile string
 )
 
@@ -90,7 +89,7 @@ func ParseArgs() {
 			}
 			os.Exit(0)
 		case "version", "--version", "-version":
-			fmt.Fprintf(os.Stdout, "%s\n", RDPG_AGENT_VERSION)
+			fmt.Fprintf(os.Stdout, "%s\n", VERSION)
 			os.Exit(0)
 		case "help", "-h", "?", "--help":
 			usage()

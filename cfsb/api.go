@@ -182,8 +182,10 @@ func InstanceHandler(w http.ResponseWriter, request *http.Request) {
 			fmt.Fprintf(w, `{"status": %d,"description": %s}`, http.StatusInternalServerError, err)
 			return
 		}
+
 		err = instance.Remove()
 		if err != nil {
+			log.Error(fmt.Sprintf("%s /v2/service_instances/:instance_id %s", request.Method, err))
 			w.WriteHeader(http.StatusInternalServerError)
 			fmt.Fprintf(w, `{"status": %d,"description": %s}`, http.StatusInternalServerError, err)
 			return

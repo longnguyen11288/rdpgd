@@ -36,6 +36,22 @@ func (n *Node) Connect() (db *sqlx.DB, err error) {
 	return db, nil
 }
 
+func (n *Node) AdminAPI(method, path string) (err error) {
+	url := fmt.Sprintf("http://%s:%s/%s", n.Host, os.Getenv("RDPG_ADMIN_PORT"), path)
+	req, err := http.NewRequest(method, url, bytes.NewBuffer([]byte(`{}`)))
+	// req.Header.Set("Content-Type", "application/json")
+	req.SetBasicAuth(os.Getenv("RDPG_ADMIN_USER"), os.Getenv("RDPG_ADMIN_PASS"))
+	client := &http.Client{}
+	log.Trace(fmt.Sprintf(`Node#AdminAPI() %s %s`, method, url))
+	resp, err := client.Do(req)
+	if err != nil {
+		log.Error(fmt.Sprintf(`Node#AdminAPI() %s %s :: %s`, method, url, err))
+	}
+	resp.Body.Close()
+
+	return
+}
+
 func ExistsUser(user string) (exists bool, err error) {
 	// As `postgres` user,
 	// type name string
@@ -82,7 +98,7 @@ func (n *Node) CreateUser(name, password string) (err error) {
 		log.Error(fmt.Sprintf(`Node#CreateUser() %s`, err))
 		return err
 	}
-	if name != `` {
+	if name != "" {
 		log.Debug(fmt.Sprintf(`User '%s' already exists, not creating.`, name))
 		return nil
 	}
@@ -161,21 +177,5 @@ func (n *Node) CreateExtensions(exts []string) (err error) {
 		log.Error(fmt.Sprintf("Node#CreateExtensions() %s", err))
 		return
 	}
-	return
-}
-
-func (n *Node) AdminAPI(method, path string) (err error) {
-	url := fmt.Sprintf("http://%s:%s/%s", n.Host, os.Getenv("RDPG_ADMIN_PORT"), path)
-	req, err := http.NewRequest(method, url, bytes.NewBuffer([]byte(`{}`)))
-	// req.Header.Set("Content-Type", "application/json")
-	req.SetBasicAuth(os.Getenv("RDPG_ADMIN_USER"), os.Getenv("RDPG_ADMIN_PASS"))
-	client := &http.Client{}
-	log.Trace(fmt.Sprintf(`Node#AdminAPI() %s %s`, method, url))
-	resp, err := client.Do(req)
-	if err != nil {
-		log.Error(fmt.Sprintf(`Node#AdminAPI() %s %s :: %s`, method, url, err))
-	}
-	resp.Body.Close()
-
 	return
 }

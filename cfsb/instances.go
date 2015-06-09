@@ -112,19 +112,47 @@ VALUES ($1,$2,$3,$4,$5,$6,$7,$8);
 			log.Error(fmt.Sprintf(`Instance#Provision() %s`, err))
 		}
 	}
+	r.DB.Close()
 	return nil
 }
 
-func (i *Instance) Remove() error {
+func (i *Instance) Remove() (err error) {
 	r := rdpg.New()
-	r.DisableDatabase(i.Database)
-	r.BackupDatabase(i.Database)
-	r.DropDatabase(i.Database)
-	r.DropUser(i.User)
+	err = r.DisableDatabase(i.Database)
+	if err != nil {
+		log.Error(fmt.Sprintf("Instance#Remove() %s", err))
+		return err
+	}
 
-	// TODO: Once all database have been nuked, delete the instance by setting ineffective_at timestamp:
-	// db.Exec("UPDATE cfsb.instances SET ineffective_at = CURRENT_TIMESTAMP WHERE id=$1", dbname);)
-	return nil
+	err = r.BackupDatabase(i.Database)
+	// Question, do we need to "stop" the replication group before dropping the database?
+	err = r.DropDatabase(i.Database)
+	if err != nil {
+		log.Error(fmt.Sprintf("Instance#Remove() %s", err))
+		return err
+	}
+	err = r.DropUser(i.User)
+	if err != nil {
+		log.Error(fmt.Sprintf("Instance#Remove() %s", err))
+		return err
+	}
+
+	r.OpenDB()
+	_, err = r.DB.Exec("UPDATE cfsb.instances SET ineffective_at = CURRENT_TIMESTAMP WHERE id=$1", i.Id)
+	if err != nil {
+		log.Error(fmt.Sprintf("Instance#Remove() %s", err))
+	}
+
+	nodes := r.Nodes()
+	for _, node := range nodes {
+		err := node.AdminAPI("PUT", "services/pgbouncer/configure")
+		if err != nil {
+			log.Error(fmt.Sprintf(`Instance#Provision() %s`, err))
+		}
+	}
+	r.DB.Close()
+
+	return
 }
 
 func (i *Instance) ExternalDNS() (dns string) {

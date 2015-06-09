@@ -44,7 +44,6 @@ func (r *RDPG) Nodes() (nodes []Node) {
 	if err != nil {
 		log.Error(fmt.Sprintf("RDPG#Nodes()  :: %s", SQL["bdr_nodes"], err))
 	}
-	log.Trace(fmt.Sprintf("RDPG#Nodes() bdr_nodes: %+v", dsns))
 
 	for _, t := range dsns {
 		node := Node{}
@@ -56,7 +55,7 @@ func (r *RDPG) Nodes() (nodes []Node) {
 		node.Database = `postgres` // strings.Split(s[3], "=")[1]
 		nodes = append(nodes, node)
 	}
-	log.Trace(fmt.Sprintf("RDPG#Nodes() nodes: %+v", nodes))
+	log.Trace(fmt.Sprintf("RDPG#Nodes() %+v", nodes))
 
 	// TODO: Get this information into the database and then out of the rdpg.nodes
 	//rows, err := db.Query("SELECT host,port,user,'postgres' FROM rdpg.nodes;")
@@ -65,6 +64,7 @@ func (r *RDPG) Nodes() (nodes []Node) {
 	//} else {
 	//	sqlx.StructScan(rows, nodes)
 	//}
+	db.Close()
 	return nodes
 }
 
@@ -74,7 +74,6 @@ func (r *RDPG) CreateUser(username, password string) (err error) {
 		db, err := node.Connect()
 		if err != nil {
 			log.Error(fmt.Sprintf(`RDPG#CreateUser() %s`, err))
-			db.Close()
 			return err
 		}
 
@@ -93,8 +92,6 @@ func (r *RDPG) CreateUser(username, password string) (err error) {
 		_, err = db.Exec(sq)
 		if err != nil {
 			log.Error(fmt.Sprintf("RDPG#CreateUser() %s %s", username, err))
-			db.Close()
-			return err
 		}
 		db.Close()
 	}
@@ -173,21 +170,22 @@ func (r *RDPG) DisableDatabase(dbname string) (err error) {
 			return err
 		}
 
-		sq := fmt.Sprintf(`UPDATE pg_database SET datallowconn = 'false' WHERE datname = '%s'`, dbname)
+		sq := fmt.Sprintf(`UPDATE pg_database SET datallowconn = 'false' WHERE datname = '%s';`, dbname)
 		_, err = db.Exec(sq)
 		if err != nil {
-			log.Error(fmt.Sprintf("RDPG#DeleteDatabase(): DISALLOW %s :: %s", dbname, err))
+			log.Error(fmt.Sprintf("RDPG#DisableDatabase(): DISALLOW %s :: %s", dbname, err))
 		}
 
 		_, err = db.Exec(`SELECT pg_terminate_backend(pg_stat_activity.pid) FROM pg_stat_activity WHERE pg_stat_activity.datname = $1 AND pid <> pg_backend_pid()`, dbname)
 		if err != nil {
-			log.Error(fmt.Sprintf("RDPG#DeleteDatabase(): TERMINATE %s :: %s", dbname, err))
+			log.Error(fmt.Sprintf("RDPG#DisableDatabase(): TERMINATE %s :: %s", dbname, err))
 		}
 
 		_, err = db.Exec("ALTER DATABASE %s OWNER TO %s", dbname, node.User)
 		if err != nil {
-			log.Error(fmt.Sprintf("RDPG#DeleteDatabase(): TERMINATE %s :: %s", dbname, err))
+			log.Error(fmt.Sprintf("RDPG#DisableDatabase(): TERMINATE %s :: %s", dbname, err))
 		}
+		db.Close()
 	}
 
 	return nil
@@ -207,11 +205,12 @@ func (r *RDPG) DropDatabase(dbname string) (err error) {
 			return err
 		}
 
-		sq := fmt.Sprintf(`DROP database IF EXISTS "%s"`, dbname)
+		sq := fmt.Sprintf(`DROP DATABASE IF EXISTS "%s"`, dbname)
 		_, err = db.Exec(sq)
 		if err != nil {
 			log.Error(fmt.Sprintf("RDPG#DeleteDatabase(): DROP %s :: %s", dbname, err))
 		}
+		db.Close()
 	}
 	return nil
 }
@@ -229,6 +228,7 @@ func (r *RDPG) DropUser(name string) (err error) {
 		if err != nil {
 			log.Error(fmt.Sprintf("RDPG#DeleteUser(): %s :: %s", name, err))
 		}
+		db.Close()
 	}
 	return nil
 }

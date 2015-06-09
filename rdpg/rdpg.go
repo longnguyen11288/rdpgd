@@ -32,8 +32,6 @@ func init() {
 		proc, _ := os.FindProcess(os.Getpid())
 		proc.Signal(syscall.SIGTERM)
 	}
-	defer db.Close()
-
 	err = db.Ping()
 	if err != nil {
 		db.Close()
@@ -41,6 +39,7 @@ func init() {
 		proc, _ := os.FindProcess(os.Getpid())
 		proc.Signal(syscall.SIGTERM)
 	}
+	db.Close()
 }
 
 func New() *RDPG {

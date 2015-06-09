@@ -21,6 +21,7 @@ func (r *RDPG) InitSchema() (err error) {
 
 	var name string
 
+	r.OpenDB()
 	db := r.DB
 
 	keys := []string{
@@ -76,7 +77,7 @@ func (r *RDPG) InitSchema() (err error) {
 	}
 
 	// TODO: Move initial population of services out of rdpg-agent to Admin API.
-	if err = db.QueryRow("SELECT name FROM cfsb.plans WHERE name='small' LIMIT 1;").Scan(&name); err != nil {
+	if err = db.QueryRow("SELECT name FROM cfsb.plans WHERE name='shared' LIMIT 1;").Scan(&name); err != nil {
 		if err == sql.ErrNoRows {
 			if _, err = db.Exec(SQL["insert_default_cfsb_plans"]); err != nil {
 				log.Error(fmt.Sprintf("rdpg.initSchema(insert_default_cfsb_plans) %s", err))
@@ -87,6 +88,8 @@ func (r *RDPG) InitSchema() (err error) {
 			return err
 		}
 	}
+
+	db.Close()
 
 	return nil
 }

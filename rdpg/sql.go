@@ -92,11 +92,11 @@ CREATE TABLE IF NOT EXISTS rdpg.watch_notifications (
 );`,
 	"insert_default_cfsb_services": `
 INSERT INTO cfsb.services (name,description,bindable,dashboard_client)
-VALUES ('rdpg', 'A Relilable Distributed PostgrSQL Service', true, '{}') ;
+VALUES ('rdpg', 'Reliable PostgrSQL Service', true, '{}') ;
 `,
 	"insert_default_cfsb_plans": `
 INSERT INTO cfsb.plans (service_id,name,description,free) 
 VALUES ((SELECT id AS svc_id FROM cfsb.services WHERE name='rdpg' LIMIT 1), 
-'small', 'A small shared reliable PostgreSQL database.', true);
+'shared', 'A Reliable PostgreSQL database on a shared server.', true);
 `,
 }
