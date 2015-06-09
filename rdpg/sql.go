@@ -81,6 +81,15 @@ CREATE TABLE IF NOT EXISTS cfsb.credentials (
   effective_at   timestamp DEFAULT CURRENT_TIMESTAMP,
   ineffective_at timestamp
 );`,
+	"create_table_rdpg_watch_notifications": `
+CREATE TABLE IF NOT EXISTS rdpg.watch_notifications ( 
+  id BIGSERIAL NOT NULL, 
+  node TEXT,
+  message TEXT,
+  raw TEXT,
+  created_at timestamp DEFAULT NOW(), 
+  CONSTRAINT watch_notification_pkey PRIMARY KEY (id, node)
+);`,
 	"insert_default_cfsb_services": `
 INSERT INTO cfsb.services (name,description,bindable,dashboard_client)
 VALUES ('rdpg', 'A Relilable Distributed PostgrSQL Service', true, '{}') ;
