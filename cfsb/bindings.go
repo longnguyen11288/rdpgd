@@ -42,9 +42,9 @@ func CreateBinding(instanceId, bindingId string) (binding *Binding, err error) {
 		JDBCURI:  "jdbc:" + instance.URI(),
 		Host:     s[0],
 		Port:     s[1],
-		UserName: instance.Database,
+		UserName: instance.User,
 		Password: instance.Pass,
-		Database: instance.User,
+		Database: instance.Database,
 	}
 
 	r := rdpg.New()
@@ -62,5 +62,37 @@ func CreateBinding(instanceId, bindingId string) (binding *Binding, err error) {
 		log.Error(fmt.Sprintf(`cfsb.CreateBinding() %s`, err))
 	}
 
+	return
+}
+
+func RemoveBinding(bindingId string) (binding *Binding, err error) {
+	log.Trace(fmt.Sprintf("cfsb.RemoveBinding(%s)", bindingId))
+	binding, err = FindBinding(bindingId)
+	if err != nil {
+		return
+	}
+	r := rdpg.New()
+	r.OpenDB()
+
+	sq := `UPDATE cfsb.bindings SET ineffective_at=CURRENT_TIMESTAMP WHERE binding_id = $1;`
+	_, err = r.DB.Query(sq, binding.BindingId)
+	if err != nil {
+		log.Error(fmt.Sprintf(`cfsb.CreateBinding() %s`, err))
+	}
+	return
+}
+
+func FindBinding(bindingId string) (binding *Binding, err error) {
+	r := rdpg.New()
+	r.OpenDB()
+	b := Binding{}
+	sq := `SELECT instance_id, binding_id FROM cfsb.bindings WHERE binding_id=lower($1) LIMIT 1;`
+	err = r.DB.Get(&b, sq, bindingId)
+	if err != nil {
+		// TODO: Change messaging if err is sql.NoRows then say couldn't find binding with bindingId
+		log.Error(fmt.Sprintf("cfsb.FindBinding(%s) %s", bindingId, err))
+	}
+	r.DB.Close()
+	binding = &b
 	return
 }

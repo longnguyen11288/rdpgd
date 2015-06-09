@@ -68,7 +68,7 @@ FROM cfsb.instances WHERE instance_id=lower($1) LIMIT 1;`
 	}
 	r.DB.Close()
 	i = &in
-	return i, err
+	return
 }
 
 func (i *Instance) Provision() (err error) {
@@ -122,9 +122,8 @@ func (i *Instance) Remove() error {
 	r.DropDatabase(i.Database)
 	r.DropUser(i.User)
 
-	// TODO: Once all database have been nuked, delete the instance.
+	// TODO: Once all database have been nuked, delete the instance by setting ineffective_at timestamp:
 	// db.Exec("UPDATE cfsb.instances SET ineffective_at = CURRENT_TIMESTAMP WHERE id=$1", dbname);)
-
 	return nil
 }
 
@@ -136,24 +135,24 @@ func (i *Instance) ExternalDNS() (dns string) {
 }
 
 func (i *Instance) URI() (uri string) {
-	d := `postgres://%s@%s/%s?connect_timeout=%s&sslmode=%s`
-	uri = fmt.Sprintf(d, i.User, i.ExternalDNS(), i.Database, `5`, `disable`)
+	d := `postgres://%s:%s@%s/%s?connect_timeout=%s&sslmode=%s`
+	uri = fmt.Sprintf(d, i.User, i.Pass, i.ExternalDNS(), i.Database, `5`, `disable`)
 	return
 }
 
 func (i *Instance) DSN() (uri string) {
 	dns := i.ExternalDNS()
 	s := strings.Split(dns, ":")
-	d := `user=%s host=%s port=%s dbname=%s connect_timeout=%s sslmode=%s`
-	uri = fmt.Sprintf(d, i.User, s[0], s[1], i.Database, `5`, `disable`)
+	d := `host=%s port=%s user=%s password=%s dbname=%s connect_timeout=%s sslmode=%s`
+	uri = fmt.Sprintf(d, s[0], s[1], i.User, i.Pass, i.Database, `5`, `disable`)
 	return
 }
 
 func (i *Instance) JDBCURI() (uri string) {
 	dns := i.ExternalDNS()
 	s := strings.Split(dns, ":")
-	d := `user=%s host=%s port=%s dbname=%s connect_timeout=%s sslmode=%s`
-	uri = fmt.Sprintf(d, i.User, s[0], s[1], i.Database, `5`, `disable`)
+	d := `host=%s port=%s user=%s password=%s dbname=%s connect_timeout=%s sslmode=%s`
+	uri = fmt.Sprintf(d, s[0], s[1], i.User, i.Pass, i.Database, `5`, `disable`)
 	return
 }
 
@@ -161,6 +160,7 @@ func Instances() (si []Instance, err error) {
 	r := rdpg.New()
 	r.OpenDB()
 	si = []Instance{}
+	// TODO: Move this into a versioned SQL Function.
 	sq := `SELECT instance_id, service_id, plan_id, organization_id, space_id, dbname, uname, 'md5'||md5(cfsb.instances.pass||uname) as pass FROM cfsb.instances WHERE ineffective_at IS NULL LIMIT 1; `
 	err = r.DB.Select(&si, sq)
 	if err != nil {

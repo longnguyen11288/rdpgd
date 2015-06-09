@@ -230,13 +230,9 @@ func BindingHandler(w http.ResponseWriter, request *http.Request) {
 			return
 		}
 	case "DELETE":
-		//err := RemoveBinding(vars["instance_id"], vars["binding_id"])
-		//if err != nil {
-		//  w.WriteHeader(http.StatusInternalServerError)
-		//fmt.Fprintf(w, `{"status": %d,"description": %s}`, http.StatusInternalServerError, err)
-		//}
-		w.WriteHeader(http.StatusInternalServerError)
-		fmt.Fprintf(w, `{"status": %d,"description": "NOT YET IMPLEMENTED"}`, http.StatusInternalServerError)
+		// Question, do we need to do anything else?
+		w.WriteHeader(http.StatusOK)
+		fmt.Fprintf(w, `{"status": %d,"description": "Binding Removed"}`, http.StatusOK)
 	default:
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		fmt.Fprintf(w, `{"status": %d,"description": "Allowed Methods: PUT, DELETE"}`, http.StatusMethodNotAllowed)
