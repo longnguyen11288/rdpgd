@@ -43,7 +43,7 @@ final_release() {
 
 get_catalog() {
   curl ${1:-} -s -X GET -H "X-Broker-API-Version: 2.4" -H "Content-Type: application/json" \
-    http://cf:cf@127.0.0.1:8888/v2/catalog
+    http://cfadmin:cfadmin@127.0.0.1:8888/v2/catalog
   echo
 }
 
@@ -92,7 +92,7 @@ case ${action} in
     echo instanceId=${instanceId}
     set -v -x
     curl -v -s -X PUT -H "X-Broker-API-Version: 2.4" -H "Content-Type: application/json" \
-      http://cf:cf@127.0.0.1:8888/v2/service_instances/${instanceId} \
+      http://cfadmin:cfadmin@127.0.0.1:8888/v2/service_instances/${instanceId} \
       -d "{ \"service_id\": \"${serviceId}\", \"plan_id\": \"${planId}\", \"organization_guid\": \"${organizationId}\", \"space_guid\": \"${spaceId}\" }"
     echo
     ;;
@@ -100,20 +100,20 @@ case ${action} in
     instanceId=$1
     set -x -v
     curl -v -X PUT -H "X-Broker-API-Version: 2.4" -H "Content-Type: application/json" \
-      http://cf:cf@127.0.0.1:8888/v2/service_instances/$instanceId/service_bindings/${bindingId} \
+      http://cfadmin:cfadmin@127.0.0.1:8888/v2/service_instances/$instanceId/service_bindings/${bindingId} \
       -d "{ \"service_id\": \"${serviceId}\", \"plan_id\": \"${planId}\", \"app_guid\": \"${appId}\"}"
     echo
     ;;
   (unbind)
     instanceId=$1
     curl -v -X DELETE -H "X-Broker-API-Version: 2.4" -H "Content-Type: application/json" \
-      http://cf:cf@127.0.0.1:8888/v2/service_instances/$instanceId/service_bindings/${bindingId}
+      http://cfadmin:cfadmin@127.0.0.1:8888/v2/service_instances/$instanceId/service_bindings/${bindingId}
     echo
     ;;
   (deprovision)
     id=$1
     curl -X DELETE -H "X-Broker-API-Version: 2.4" -v \
-      http://cf:cf@127.0.0.1:8888/v2/service_instances/${id}
+      http://cfadmin:cfadmin@127.0.0.1:8888/v2/service_instances/${id}
     echo
     ;;
   (dev_release)

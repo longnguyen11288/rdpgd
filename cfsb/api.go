@@ -28,11 +28,11 @@ func init() {
 	}
 	sbUser = os.Getenv("RDPG_SB_USER")
 	if sbUser == "" {
-		sbUser = "cf"
+		sbUser = "cfadmin"
 	}
 	sbPass = os.Getenv("RDPG_SB_PASS")
 	if sbPass == "" {
-		sbPass = "cf"
+		sbPass = "cfadmin"
 	}
 }
 
@@ -51,6 +51,7 @@ func API() {
 func httpAuth(h http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, request *http.Request) {
 		if len(request.Header["Authorization"]) == 0 {
+			log.Trace(fmt.Sprintf("httpAuth(): Authorization Required"))
 			http.Error(w, "Authorization Required", http.StatusUnauthorized)
 			return
 		}
@@ -94,26 +95,27 @@ func CatalogHandler(w http.ResponseWriter, request *http.Request) {
 		c := Catalog{}
 		err := c.Fetch()
 		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-			w.Write([]byte(err.Error()))
+			msg := fmt.Sprintf(`{"status": %d, "description": "%s"}`, http.StatusInternalServerError, err)
+			log.Error(msg)
+			http.Error(w, msg, http.StatusInternalServerError)
 			return
 		}
 		jsonCatalog, err := json.Marshal(c)
 		if err != nil {
-			log.Error(fmt.Sprintf("%s /v2/catalog %s", request.Method, err))
-			w.WriteHeader(http.StatusInternalServerError)
-			w.Write([]byte(err.Error()))
-			return
+			msg := fmt.Sprintf(`{"status": %d, "description": "%s"}`, http.StatusInternalServerError, err)
+			log.Error(msg)
+			http.Error(w, msg, http.StatusInternalServerError)
 		} else {
 			w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 			w.WriteHeader(http.StatusOK)
 			w.Write(jsonCatalog)
 		}
 	default:
-		w.WriteHeader(http.StatusMethodNotAllowed)
-		fmt.Fprintf(w, `{"status": %d,"description": "Allowed Methods: GET"}`, http.StatusMethodNotAllowed)
-		return
+		msg := fmt.Sprintf(`{"status": %d, "description": "Allowed Methods: GET"}`, http.StatusMethodNotAllowed)
+		log.Error(msg)
+		http.Error(w, msg, http.StatusMethodNotAllowed)
 	}
+	return
 }
 
 /*

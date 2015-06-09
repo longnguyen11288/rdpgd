@@ -5,10 +5,17 @@ an http API listener that allows for [Cloud Foundry Service Broker]() functional
 
 In development `rdpg-agent` can be registered with CF via,
 ```sh
-cf create-service-broker rdpg cfadmin cfadmin http://10.244.2.2:8888
+CF_TRACE=true cf create-service-broker rdpg cfadmin cfadmin http://10.244.2.2:8888
 ```
 
 In production you will need to make sure that a domain name passes through to 
 this backend port on any of the nodes, first node by default.
+
+Don't forget to allow access to the newly registered services,
+```sh
+cf enable-service-access rdpg -o $USER
+cf service-access
+cf marketplace
+```
 
 

@@ -105,6 +105,13 @@ VALUES ($1,$2,$3,$4,$5,$6,$7,$8);
 		log.Error(fmt.Sprintf(`Instance#Provision() %s`, err))
 	}
 
+	nodes := r.Nodes()
+	for _, node := range nodes {
+		err := node.AdminAPI("PUT", "services/pgbouncer/configure")
+		if err != nil {
+			log.Error(fmt.Sprintf(`Instance#Provision() %s`, err))
+		}
+	}
 	return nil
 }
 
@@ -148,5 +155,19 @@ func (i *Instance) JDBCURI() (uri string) {
 	s := strings.Split(dns, ":")
 	d := `user=%s host=%s port=%s dbname=%s connect_timeout=%s sslmode=%s`
 	uri = fmt.Sprintf(d, i.User, s[0], s[1], i.Database, `5`, `disable`)
+	return
+}
+
+func Instances() (si []Instance, err error) {
+	r := rdpg.New()
+	r.OpenDB()
+	si = []Instance{}
+	sq := `SELECT instance_id, service_id, plan_id, organization_id, space_id, dbname, uname, 'md5'||md5(cfsb.instances.pass||uname) as pass FROM cfsb.instances WHERE ineffective_at IS NULL LIMIT 1; `
+	err = r.DB.Select(&si, sq)
+	if err != nil {
+		// TODO: Change messaging if err is sql.NoRows then say couldn't find instance with instanceId
+		log.Error(fmt.Sprintf("cfsb.Instances() :: %s", err))
+	}
+	r.DB.Close()
 	return
 }

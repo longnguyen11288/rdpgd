@@ -1,8 +1,11 @@
 package rdpg
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
+	"net/http"
+	"os"
 
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
@@ -106,9 +109,7 @@ func (n *Node) CreateUser(name, password string) (err error) {
 }
 
 func (n *Node) CreateDatabase(dbname, owner string) (err error) {
-
 	n.Database = "postgres"
-
 	db, err := n.Connect()
 	if err != nil {
 		log.Error(fmt.Sprintf("Node#CreateDatabase() error connecting to database %s", err))
@@ -160,5 +161,21 @@ func (n *Node) CreateExtensions(exts []string) (err error) {
 		log.Error(fmt.Sprintf("Node#CreateExtensions() %s", err))
 		return
 	}
+	return
+}
+
+func (n *Node) AdminAPI(method, path string) (err error) {
+	url := fmt.Sprintf("http://%s:%s/%s", n.Host, os.Getenv("RDPG_ADMIN_PORT"), path)
+	req, err := http.NewRequest(method, url, bytes.NewBuffer([]byte(`{}`)))
+	// req.Header.Set("Content-Type", "application/json")
+	req.SetBasicAuth(os.Getenv("RDPG_ADMIN_USER"), os.Getenv("RDPG_ADMIN_PASS"))
+	client := &http.Client{}
+	log.Trace(fmt.Sprintf(`Node#AdminAPI() %s %s`, method, url))
+	resp, err := client.Do(req)
+	if err != nil {
+		log.Error(fmt.Sprintf(`Node#AdminAPI() %s %s :: %s`, method, url, err))
+	}
+	resp.Body.Close()
+
 	return
 }
