@@ -132,12 +132,11 @@ func (i *Instance) ExternalDNS() (dns string) {
 	// TODO: Figure out where we'll store and retrieve the external DNS information
 	r := rdpg.New()
 	nodes := r.Nodes()
-	return nodes[0].Host + ":" + nodes[0].Port
+	return nodes[0].Host + ":5432"
 }
 
 func (i *Instance) URI() (uri string) {
 	d := `postgres://%s@%s/%s?connect_timeout=%s&sslmode=%s`
-	// TODO:
 	uri = fmt.Sprintf(d, i.User, i.ExternalDNS(), i.Database, `5`, `disable`)
 	return
 }
