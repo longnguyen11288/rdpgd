@@ -41,6 +41,7 @@ func (r *RDPG) InitSchema() (err error) {
 		"create_table_cfsb_instances",
 		"create_table_cfsb_bindings",
 		"create_table_cfsb_credentials",
+		"create_table_rdpg_watch_notifications",
 	}
 	for _, key := range keys {
 		k := strings.Replace(strings.Replace(key, "create_table_", "", 1), "_", ".", 1)
