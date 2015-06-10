@@ -12,7 +12,7 @@ import (
 
 // TODO: This should only be run on one node...
 func (r *RDPG) InitSchema() (err error) {
-	log.Trace(fmt.Sprintf("RDPG#initSchema() for %s", rdpgURI))
+	log.Trace(fmt.Sprintf("RDPG#initSchema() for ! %s", rdpgURI))
 	// TODO: if 'rdpg' database DNE,
 	// For each node connect to pgbdr and:
 	//   CreatDatabase('rdpg','postgres')
@@ -21,7 +21,7 @@ func (r *RDPG) InitSchema() (err error) {
 
 	var name string
 
-	r.OpenDB()
+	r.OpenDB("rdpg")
 	db := r.DB
 
 	keys := []string{
@@ -32,7 +32,7 @@ func (r *RDPG) InitSchema() (err error) {
 		log.Trace(fmt.Sprintf("RDPG#initSchema() SQL[%s]", key))
 		_, err = db.Exec(SQL[key])
 		if err != nil {
-			log.Error(fmt.Sprintf("RDPG#initSchema() %s", err))
+			log.Error(fmt.Sprintf("RDPG#initSchema() ! %s", err))
 		}
 	}
 
@@ -54,14 +54,13 @@ func (r *RDPG) InitSchema() (err error) {
 				log.Trace(fmt.Sprintf("RDPG#initSchema() SQL[%s]", key))
 				_, err = db.Exec(SQL[key])
 				if err != nil {
-					log.Error(fmt.Sprintf("RDPG#initSchema() %s", err))
+					log.Error(fmt.Sprintf("RDPG#initSchema() ! %s", err))
 				}
 			} else {
-				log.Error(fmt.Sprintf("rdpg.initSchema() %s", err))
+				log.Error(fmt.Sprintf("rdpg.initSchema() ! %s", err))
 				return err
 			}
 		}
-
 	}
 
 	// TODO: Move initial population of services out of rdpg-agent to Admin API.
@@ -72,7 +71,7 @@ func (r *RDPG) InitSchema() (err error) {
 				return err
 			}
 		} else {
-			log.Error(fmt.Sprintf("rdpg.initSchema() %s", err))
+			log.Error(fmt.Sprintf("rdpg.initSchema() ! %s", err))
 			return err
 		}
 	}
@@ -85,12 +84,44 @@ func (r *RDPG) InitSchema() (err error) {
 				return err
 			}
 		} else {
-			log.Error(fmt.Sprintf("rdpg.initSchema() %s", err))
+			log.Error(fmt.Sprintf("rdpg.initSchema() ! %s", err))
 			return err
 		}
 	}
 
 	db.Close()
 
+	r.OpenDB("postgres") // ...TODO: Connect to Postgres Database
+	db = r.DB
+	log.Trace(fmt.Sprintf("RDPG#initSchema() SQL[%s]", "postgres_schemas"))
+	_, err = db.Exec(SQL["postgres_schemas"])
+	if err != nil {
+		log.Error(fmt.Sprintf("RDPG#initSchema() ! %s", err))
+	}
+
+	keys = []string{ // These are for the postgres database only
+		"create_function_rdpg_disable_database",
+	}
+	for _, key := range keys {
+		//
+		k := strings.Split(strings.Replace(strings.Replace(key, "create_function_", "", 1), "_", ".", 1), ".")
+		sq := fmt.Sprintf(`SELECT routine_name FROM information_schema.routines 
+WHERE routine_type='FUNCTION' AND routine_schema='%s' AND routine_name='%s';`, k[0], k[1])
+
+		log.Trace(fmt.Sprintf("RDPG#initSchema() %s", sq))
+		if err := db.QueryRow(sq).Scan(&name); err != nil {
+			if err == sql.ErrNoRows {
+				log.Trace(fmt.Sprintf("RDPG#initSchema() SQL[%s]", key))
+				_, err = db.Exec(SQL[key])
+				if err != nil {
+					log.Error(fmt.Sprintf("RDPG#initSchema() %s", err))
+				}
+			} else {
+				log.Error(fmt.Sprintf("rdpg.initSchema() %s", err))
+				return err
+			}
+		}
+	}
+	db.Close()
 	return nil
 }

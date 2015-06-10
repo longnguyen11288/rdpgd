@@ -49,7 +49,7 @@ func CreateBinding(instanceId, bindingId string) (binding *Binding, err error) {
 	}
 
 	r := rdpg.New()
-	r.OpenDB()
+	r.OpenDB("rdpg")
 
 	sq := `INSERT INTO cfsb.bindings (instance_id,binding_id) VALUES ($1,$2);`
 	_, err = r.DB.Query(sq, binding.InstanceId, binding.BindingId)
@@ -77,7 +77,7 @@ func RemoveBinding(bindingId string) (binding *Binding, err error) {
 	r := rdpg.New()
 	sq := `UPDATE cfsb.bindings SET ineffective_at = CURRENT_TIMESTAMP WHERE binding_id = $1;`
 	log.Trace(fmt.Sprintf(`cfsb.RemoveBinding(%s) > %s`, bindingId, sq))
-	r.OpenDB()
+	r.OpenDB("rdpg")
 	_, err = r.DB.Query(sq, bindingId)
 	if err != nil {
 		log.Error(fmt.Sprintf(`cfsb.CreateBinding(%s) ! %s`, bindingId, err))
@@ -91,7 +91,7 @@ func FindBinding(bindingId string) (binding *Binding, err error) {
 	b := Binding{}
 	sq := `SELECT id,instance_id, binding_id FROM cfsb.bindings WHERE binding_id=lower($1) LIMIT 1;`
 	log.Trace(fmt.Sprintf(`cfsb.FindBinding(%s) > %s`, bindingId, sq))
-	r.OpenDB()
+	r.OpenDB("rdpg")
 	err = r.DB.Get(&b, sq, bindingId)
 	if err != nil {
 		// TODO: Change messaging if err is sql.NoRows then say couldn't find binding with bindingId

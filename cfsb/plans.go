@@ -24,7 +24,7 @@ type Plan struct {
 
 func FindPlan(planId string) (plan *Plan, err error) {
 	r := rdpg.New()
-	r.OpenDB()
+	r.OpenDB("rdpg")
 	plan = &Plan{}
 	sq := `SELECT id,name,description FROM cfsb.plans WHERE id=$1 LIMIT 1;`
 	err = r.DB.Get(&plan, sq, planId)

@@ -54,7 +54,7 @@ func main() {
 	}()
 
 	r := rdpg.New()
-	err := r.OpenDB()
+	err := r.OpenDB("rdpg")
 	if err != nil {
 		log.Error(err.Error())
 		proc, _ := os.FindProcess(os.Getpid())
@@ -76,7 +76,7 @@ func ParseArgs() {
 		switch arg {
 		case "init":
 			r := rdpg.New()
-			err := r.OpenDB()
+			err := r.OpenDB("rdpg")
 			if err != nil {
 				fmt.Fprintf(os.Stderr, "%s\n", err)
 				os.Exit(1)

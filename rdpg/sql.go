@@ -3,6 +3,9 @@ package rdpg
 //uuid_generate_v1mc(), // uuid-ossp
 
 var SQL map[string]string = map[string]string{
+	"postgres_schemas": `
+CREATE SCHEMA IF NOT EXISTS rdpg;
+	`,
 	"rdpg_schemas": `
 CREATE SCHEMA IF NOT EXISTS rdpg;
 CREATE SCHEMA IF NOT EXISTS pgbdr;
@@ -98,5 +101,35 @@ VALUES ('rdpg', 'Reliable PostgrSQL Service', true, '{}') ;
 INSERT INTO cfsb.plans (service_id,name,description,free) 
 VALUES ((SELECT id AS svc_id FROM cfsb.services WHERE name='rdpg' LIMIT 1), 
 'shared', 'A Reliable PostgreSQL database on a shared server.', true);
+`,
+	"create_function_rdpg_disable_database": `
+CREATE OR REPLACE FUNCTION rdpg.bdr_disable_database(name text) RETURNS VOID
+AS $func$
+-- NOTE: This may only be run on the 'postgres' datbase
+DECLARE
+  r RECORD;
+BEGIN
+  IF name IN ('postgres','rdpg')
+  THEN RETURN;
+  END IF;
+
+  UPDATE pg_database 
+  SET datallowconn = 'false' 
+  WHERE datname = name;
+
+  PERFORM pg_terminate_backend(pg_stat_activity.pid) 
+  FROM pg_stat_activity 
+  WHERE pg_stat_activity.datname = name
+	AND pid <> pg_backend_pid();
+
+  FOR r IN 
+    SELECT slot_name 
+    FROM pg_replication_slots 
+    WHERE database = name 
+  LOOP 
+    PERFORM pg_drop_replication_slot(r.slot_name);
+  END LOOP;
+END;
+$func$ LANGUAGE plpgsql;
 `,
 }

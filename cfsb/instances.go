@@ -60,7 +60,7 @@ func FindInstance(instanceId string) (i *Instance, err error) {
 	in := Instance{}
 	sq := `SELECT id, instance_id, service_id, plan_id, organization_id, space_id, dbname, uname, pass 
 FROM cfsb.instances WHERE instance_id=lower($1) LIMIT 1;`
-	r.OpenDB()
+	r.OpenDB("rdpg")
 	err = r.DB.Get(&in, sq, instanceId)
 	if err != nil {
 		// TODO: Change messaging if err is sql.NoRows then say couldn't find instance with instanceId
@@ -94,7 +94,7 @@ func (i *Instance) Provision() (err error) {
 		return err
 	}
 
-	r.OpenDB()
+	r.OpenDB("rdpg")
 	sq := `INSERT INTO cfsb.instances 
 (instance_id, service_id, plan_id, organization_id, space_id, dbname, uname, pass)
 VALUES ($1,$2,$3,$4,$5,$6,$7,$8);
@@ -137,7 +137,7 @@ func (i *Instance) Remove() (err error) {
 		return err
 	}
 
-	r.OpenDB()
+	r.OpenDB("rdpg")
 	_, err = r.DB.Exec(`UPDATE cfsb.instances SET ineffective_at = CURRENT_TIMESTAMP WHERE id=$1`, i.Id)
 	if err != nil {
 		log.Error(fmt.Sprintf("Instance#Remove(%s) ! %s", i.InstanceId, err))
@@ -186,7 +186,7 @@ func (i *Instance) JDBCURI() (uri string) {
 
 func Instances() (si []Instance, err error) {
 	r := rdpg.New()
-	r.OpenDB()
+	r.OpenDB("rdpg")
 	si = []Instance{}
 	// TODO: Move this into a versioned SQL Function.
 	sq := `SELECT instance_id, service_id, plan_id, organization_id, space_id, dbname, uname, 'md5'||md5(cfsb.instances.pass||uname) as pass FROM cfsb.instances WHERE ineffective_at IS NULL LIMIT 1; `

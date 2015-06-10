@@ -164,29 +164,14 @@ func (r *RDPG) DisableDatabase(dbname string) (err error) {
 		node.Database = "postgres"
 		db, err := node.Connect()
 		if err != nil {
-			log.Error(fmt.Sprintf("CreateReplicationGroup(%s) %s ! %s", dbname, node.Host, err))
+			log.Error(fmt.Sprintf("RDPG#DisableDatabase(%s) %s ! %s", dbname, node.Host, err))
 			return err
 		}
-
-		sq := fmt.Sprintf(`UPDATE pg_database SET datallowconn = 'false' WHERE datname = '%s';`, dbname)
-		log.Trace(fmt.Sprintf(`RDPG#DisableDatabase(%s) DISALLOW %s > %s`, dbname, node.Host, sq))
+		sq := fmt.Sprintf(`SELECT rdpg.bdr_disable_database('%s');`, dbname)
+		log.Trace(fmt.Sprintf(`RDPG#DisableDatabase(%s) DISABLE %s > %s`, dbname, node.Host, sq))
 		_, err = db.Exec(sq)
 		if err != nil {
-			log.Error(fmt.Sprintf("RDPG#DisableDatabase(%s) DISALLOW %s ! %s", dbname, node.Host, err))
-		}
-
-		sq = fmt.Sprintf(`SELECT pg_terminate_backend(pg_stat_activity.pid) FROM pg_stat_activity WHERE pg_stat_activity.datname = '%s' AND pid <> pg_backend_pid()`, dbname)
-		log.Trace(fmt.Sprintf(`RDPG#DisableDatabase(%s) TERMINATE %s > %s`, dbname, node.Host, sq))
-		_, err = db.Exec(sq)
-		if err != nil {
-			log.Error(fmt.Sprintf("RDPG#DisableDatabase(%s) TERMINATE %s ! %s", dbname, node.Host, err))
-		}
-
-		sq = fmt.Sprintf(`ALTER DATABASE %s OWNER TO %s`, dbname, node.User)
-		log.Trace(fmt.Sprintf(`RDPG#DisableDatabase(%s) OWNER %s > %s`, dbname, node.Host, sq))
-		_, err = db.Exec(sq)
-		if err != nil {
-			log.Error(fmt.Sprintf("RDPG#DisableDatabase(%s) OWNER %s ! %s", dbname, node.Host, err))
+			log.Error(fmt.Sprintf("RDPG#DisableDatabase(%s) DISABLE %s ! %s", dbname, node.Host, err))
 		}
 		db.Close()
 	}
@@ -213,10 +198,10 @@ func (r *RDPG) DropDatabase(dbname string) (err error) {
 
 		// TODO: How do we drop a database in bdr properly?
 		sq := fmt.Sprintf(`DROP DATABASE IF EXISTS %s`, dbname)
-		log.Trace(fmt.Sprintf(`RDPG#DropDatabase(%s) %s > %s`, dbname, node.Host, sq))
+		log.Trace(fmt.Sprintf(`RDPG#DropDatabase(%s) %s DROP > %s`, dbname, node.Host, sq))
 		_, err = db.Exec(sq)
 		if err != nil {
-			log.Error(fmt.Sprintf("RDPG#DropDatabase(%s) %s ! %s", dbname, node.Host, err))
+			log.Error(fmt.Sprintf("RDPG#DropDatabase(%s) DROP %s ! %s", dbname, node.Host, err))
 		}
 		db.Close()
 	}

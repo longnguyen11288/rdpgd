@@ -15,7 +15,7 @@ type Catalog struct {
 
 func (c *Catalog) Fetch() (err error) {
 	r := rdpg.New()
-	err = r.OpenDB()
+	err = r.OpenDB("rdpg")
 	if err != nil {
 		log.Error(fmt.Sprintf("Failed fetching catalog from database: %s", err))
 		return

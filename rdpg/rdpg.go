@@ -2,6 +2,7 @@ package rdpg
 
 import (
 	"fmt"
+	"net/url"
 	"os"
 	"syscall"
 
@@ -46,8 +47,15 @@ func New() *RDPG {
 	return &RDPG{URI: rdpgURI}
 }
 
-func (r *RDPG) OpenDB() error {
+// TODO: Instead pass back *sql.DB
+func (r *RDPG) OpenDB(dbname string) error {
 	if r.DB == nil {
+		u, err := url.Parse(r.URI)
+		if err != nil {
+			log.Error(fmt.Sprintf("Failed parsing URI %s err: %s", r.URI, err))
+		}
+		u.Path = dbname
+		r.URI = u.String()
 		db, err := sqlx.Connect("postgres", r.URI)
 		if err != nil {
 			log.Error(fmt.Sprintf("Failed connecting to %s err: %s", rdpgURI, err))
