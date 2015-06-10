@@ -57,10 +57,10 @@ func NewInstance(instanceId, serviceId, planId, organizationId, spaceId string) 
 
 func FindInstance(instanceId string) (i *Instance, err error) {
 	r := rdpg.New()
-	r.OpenDB()
 	in := Instance{}
 	sq := `SELECT id, instance_id, service_id, plan_id, organization_id, space_id, dbname, uname, pass 
 FROM cfsb.instances WHERE instance_id=lower($1) LIMIT 1;`
+	r.OpenDB()
 	err = r.DB.Get(&in, sq, instanceId)
 	if err != nil {
 		// TODO: Change messaging if err is sql.NoRows then say couldn't find instance with instanceId

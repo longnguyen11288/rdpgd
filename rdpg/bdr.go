@@ -55,8 +55,6 @@ func (r *RDPG) Nodes() (nodes []Node) {
 		node.Database = `postgres` // strings.Split(s[3], "=")[1]
 		nodes = append(nodes, node)
 	}
-	log.Trace(fmt.Sprintf("RDPG#Nodes() %+v", nodes))
-
 	// TODO: Get this information into the database and then out of the rdpg.nodes
 	//rows, err := db.Query("SELECT host,port,user,'postgres' FROM rdpg.nodes;")
 	//if err != nil {
@@ -88,7 +86,7 @@ func (r *RDPG) CreateUser(username, password string) (err error) {
 		}
 
 		sq = fmt.Sprintf(`ALTER USER %s ENCRYPTED PASSWORD '%s'`, username, password)
-		log.Trace(fmt.Sprintf(`RDPG#CreateUser(%s) %s > %s`, node.Host, sq))
+		log.Trace(fmt.Sprintf(`RDPG#CreateUser(%s) %s > %s`, username, node.Host, sq))
 		_, err = db.Exec(sq)
 		if err != nil {
 			log.Error(fmt.Sprintf("RDPG#CreateUser(%s) %s ! %s", username, node.Host, err))
@@ -170,14 +168,14 @@ func (r *RDPG) DisableDatabase(dbname string) (err error) {
 			return err
 		}
 
-		sq := fmt.Sprintf(`UPDATE pg_database SET datallowconn = 'false' WHERE datname = %s;`, dbname)
+		sq := fmt.Sprintf(`UPDATE pg_database SET datallowconn = 'false' WHERE datname = '%s';`, dbname)
 		log.Trace(fmt.Sprintf(`RDPG#DisableDatabase(%s) %s > %s`, dbname, node.Host, sq))
 		_, err = db.Exec(sq)
 		if err != nil {
 			log.Error(fmt.Sprintf("RDPG#DisableDatabase(%s) DISALLOW %s ! %s", dbname, node.Host, err))
 		}
 
-		sq = fmt.Sprintf(`SELECT pg_terminate_backend(pg_stat_activity.pid) FROM pg_stat_activity WHERE pg_stat_activity.datname = %s AND pid <> pg_backend_pid()`, dbname)
+		sq = fmt.Sprintf(`SELECT pg_terminate_backend(pg_stat_activity.pid) FROM pg_stat_activity WHERE pg_stat_activity.datname = '%s' AND pid <> pg_backend_pid()`, dbname)
 		log.Trace(fmt.Sprintf(`RDPG#DisableDatabase(%s) TERMINATE %s > %s`, dbname, node.Host, sq))
 		_, err = db.Exec(sq)
 		if err != nil {
@@ -209,6 +207,9 @@ func (r *RDPG) DropDatabase(dbname string) (err error) {
 			log.Error(fmt.Sprintf("RDPG#DropDatabase(%s) %s ! %s", dbname, node.Host, err))
 			return err
 		}
+
+		// sq := fmt.Sprintf(SELECT slot_name FROM pg_replication_slots WHERE database='%s',dbname);
+		// pg_recvlogical --drop-slot
 
 		// TODO: How do we drop a database in bdr properly?
 		sq := fmt.Sprintf(`DROP DATABASE IF EXISTS %s`, dbname)
