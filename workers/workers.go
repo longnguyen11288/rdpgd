@@ -1,8 +1,11 @@
 package workers
 
-import(
+import (
 	"time"
 )
+
+type Worker struct {
+}
 
 func Run() {
 	for {

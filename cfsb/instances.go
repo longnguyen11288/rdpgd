@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"regexp"
 	"strings"
+	"time"
 
 	"github.com/wayneeseguin/rdpg-agent/log"
 	"github.com/wayneeseguin/rdpg-agent/rdpg"
@@ -58,8 +59,7 @@ func NewInstance(instanceId, serviceId, planId, organizationId, spaceId string) 
 func FindInstance(instanceId string) (i *Instance, err error) {
 	r := rdpg.New()
 	in := Instance{}
-	sq := `SELECT id, instance_id, service_id, plan_id, organization_id, space_id, dbname, uname, pass 
-FROM cfsb.instances WHERE instance_id=lower($1) LIMIT 1;`
+	sq := `SELECT id, instance_id, service_id, plan_id, organization_id, space_id, dbname, uname, pass FROM cfsb.instances WHERE instance_id=lower($1) LIMIT 1;`
 	r.OpenDB("rdpg")
 	err = r.DB.Get(&in, sq, instanceId)
 	if err != nil {
@@ -78,19 +78,19 @@ func (i *Instance) Provision() (err error) {
 	// TODO: Alter this logic based on "plan"
 	err = r.CreateUser(i.User, i.Pass)
 	if err != nil {
-		log.Error(fmt.Sprintf("Instance#Provision(%s) ! %s", i.InstanceId, err))
+		log.Error(fmt.Sprintf("Instance#Provision(%s) CreateUser(%s) ! %s", i.InstanceId, i.User, err))
 		return err
 	}
 
 	err = r.CreateDatabase(i.Database, i.User)
 	if err != nil {
-		log.Error(fmt.Sprintf("Instance#Provision(%s) ! %s", i.InstanceId, err))
+		log.Error(fmt.Sprintf("Instance#Provision(%s) CreateDatabase(%s,%s) ! %s", i.InstanceId, i.Database, i.User, err))
 		return err
 	}
 
 	err = r.CreateReplicationGroup(i.Database)
 	if err != nil {
-		log.Error(fmt.Sprintf("Instance#Provision(%s) ! %s", i.InstanceId, err))
+		log.Error(fmt.Sprintf("Instance#Provision(%s) CreateReplicationGroup(%s) ! %s", i.InstanceId, i.Database, err))
 		return err
 	}
 
@@ -108,7 +108,7 @@ VALUES ($1,$2,$3,$4,$5,$6,$7,$8);
 	for _, node := range nodes {
 		err := node.AdminAPI("PUT", "services/pgbouncer/configure")
 		if err != nil {
-			log.Error(fmt.Sprintf(`Instance#Provision(%s) ! %s`, i.InstanceId, err))
+			log.Error(fmt.Sprintf(`Instance#Provision(%s) %s ! %s`, i.InstanceId, node.Host, err))
 		}
 	}
 	r.DB.Close()
@@ -117,41 +117,21 @@ VALUES ($1,$2,$3,$4,$5,$6,$7,$8);
 
 func (i *Instance) Remove() (err error) {
 	r := rdpg.New()
-	err = r.DisableDatabase(i.Database)
-	if err != nil {
-		log.Error(fmt.Sprintf("Instance#Remove(%s) ! %s", i.InstanceId, err))
-		return err
-	}
-
-	err = r.BackupDatabase(i.Database)
-	// Question, do we need to "stop" the replication group before dropping the database?
-	err = r.DropDatabase(i.Database)
-	if err != nil {
-		log.Error(fmt.Sprintf("Instance#Remove(%s) ! %s", i.InstanceId, err))
-		return err
-	}
-
-	err = r.DropUser(i.User)
-	if err != nil {
-		log.Error(fmt.Sprintf("Instance#Remove(%s) ! %s", i.InstanceId, err))
-		return err
-	}
-
 	r.OpenDB("rdpg")
 	_, err = r.DB.Exec(`UPDATE cfsb.instances SET ineffective_at = CURRENT_TIMESTAMP WHERE id=$1`, i.Id)
 	if err != nil {
 		log.Error(fmt.Sprintf("Instance#Remove(%s) ! %s", i.InstanceId, err))
 	}
 
-	nodes := r.Nodes()
-	for _, node := range nodes {
+	time.Sleep(1) // Wait for the update to propigate to the other nodes.
+
+	for _, node := range r.Nodes() {
 		err := node.AdminAPI("PUT", "services/pgbouncer/configure")
 		if err != nil {
-			log.Error(fmt.Sprintf(`Instance#Provision(%s) ! %s`, i.InstanceId, err))
+			log.Error(fmt.Sprintf(`Instance#Provision(%s) %s ! %s`, i.InstanceId, node.Host, err))
 		}
 	}
 	r.DB.Close()
-
 	return
 }
 

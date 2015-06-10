@@ -49,12 +49,14 @@ func (s *Service) Configure() (err error) {
 		pc := []string{string(pgbConf)}
 		pu := []string{string(pgbUsers)}
 		for _, i := range instances {
-			// TODO: Fetch port from config somewhere instead of hardcoding here.
+			// TODO: Fetch port from something like os.Getenv("PG_PORT") instead of hardcoding here.
 			c := fmt.Sprintf(`%s = host=%s port=%s dbname=%s`, i.Database, "127.0.0.1", "7432", i.Database)
 			pc = append(pc, c)
 			u := fmt.Sprintf(`"%s" "%s"`, i.User, i.Pass)
 			pu = append(pu, u)
 		}
+		pc = append(pc, "")
+		pu = append(pu, "")
 
 		err = ioutil.WriteFile(`/var/vcap/store/pgbouncer/config/pgbouncer.ini`, []byte(strings.Join(pc, "\n")), 0640)
 		if err != nil {

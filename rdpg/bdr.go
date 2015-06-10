@@ -160,7 +160,10 @@ func (r *RDPG) CreateReplicationGroup(dbname string) (err error) {
 }
 
 func (r *RDPG) DisableDatabase(dbname string) (err error) {
-	for _, node := range r.Nodes() {
+	nodes := r.Nodes()
+	for i := len(nodes) - 1; i >= 0; i-- {
+		node := nodes[i]
+
 		node.Database = "postgres"
 		db, err := node.Connect()
 		if err != nil {
@@ -185,7 +188,10 @@ func (r *RDPG) BackupDatabase(dbname string) (err error) {
 }
 
 func (r *RDPG) DropDatabase(dbname string) (err error) {
-	for _, node := range r.Nodes() {
+	nodes := r.Nodes()
+	for i := len(nodes) - 1; i >= 0; i-- {
+		node := nodes[i]
+
 		node.Database = "postgres"
 		db, err := node.Connect()
 		if err != nil {
@@ -209,7 +215,10 @@ func (r *RDPG) DropDatabase(dbname string) (err error) {
 }
 
 func (r *RDPG) DropUser(name string) (err error) {
-	for _, node := range r.Nodes() {
+	nodes := r.Nodes()
+	for i := len(nodes) - 1; i >= 0; i-- {
+		node := nodes[i]
+
 		node.Database = "postgres"
 		db, err := node.Connect()
 		if err != nil {

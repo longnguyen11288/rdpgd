@@ -95,7 +95,7 @@ func (n *Node) CreateUser(name, password string) (err error) {
 
 	err = db.Get(&name, `SELECT rolname FROM pg_roles WHERE rolname=? LIMIT 1;`, name)
 	if err != nil {
-		log.Error(fmt.Sprintf(`Node#CreateUser(%s) ! %s`, name, err))
+		log.Error(fmt.Sprintf(`Node#CreateUser(%s) %s ! %s`, name, n.Host, err))
 		return err
 	}
 	if name != "" {
@@ -107,16 +107,16 @@ func (n *Node) CreateUser(name, password string) (err error) {
 	result, err := db.Exec(sq)
 	rows, _ := result.RowsAffected()
 	if rows > 0 {
-		log.Debug(fmt.Sprintf(`Node#CreateUser(%s) Created`, name))
+		log.Debug(fmt.Sprintf(`Node#CreateUser(%s) %s User Created`, n.Host, name))
 	}
 	if err != nil {
-		log.Error(fmt.Sprintf(`Node#CreateUser(%s) ! %s`, name, err))
+		log.Error(fmt.Sprintf(`Node#CreateUser(%s) %s ! %s`, name, n.Host, err))
 		return err
 	}
 	sq = fmt.Sprintf(`ALTER USER %s ENCRYPTED PASSWORD %s;`, name, password)
 	_, err = db.Exec(sq)
 	if err != nil {
-		log.Error(fmt.Sprintf(`Node#CreateUser(%s) ! %s`, name, err))
+		log.Error(fmt.Sprintf(`Node#CreateUser(%s) %s ! %s`, name, n.Host, err))
 		return err
 	}
 
@@ -127,31 +127,31 @@ func (n *Node) CreateDatabase(dbname, owner string) (err error) {
 	n.Database = "postgres"
 	db, err := n.Connect()
 	if err != nil {
-		log.Error(fmt.Sprintf("Node#CreateDatabase(%s) ! %s", dbname, err))
+		log.Error(fmt.Sprintf("Node#CreateDatabase(%s) %s ! %s", dbname, n.Host, err))
 		return
 	}
 	defer db.Close()
 
 	sq := fmt.Sprintf(`CREATE DATABASE %s WITH OWNER %s TEMPLATE template0 ENCODING 'UTF8'`, dbname, owner)
-	log.Trace(fmt.Sprintf(`Node#CreateDatabase(%s) > %s`, dbname, sq))
+	log.Trace(fmt.Sprintf(`Node#CreateDatabase(%s) %s > %s`, dbname, n.Host, sq))
 	_, err = db.Query(sq)
 	if err != nil {
-		log.Error(fmt.Sprintf("Node#CreateDatabase(%s) ! %s", dbname, err))
+		log.Error(fmt.Sprintf("Node#CreateDatabase(%s) %s ! %s", dbname, n.Host, err))
 		return
 	}
 
 	sq = fmt.Sprintf(`REVOKE ALL ON DATABASE "%s" FROM public`, dbname)
-	log.Trace(fmt.Sprintf(`Node#CreateDatabase(%s) > %s`, dbname, sq))
+	log.Trace(fmt.Sprintf(`Node#CreateDatabase(%s) %s > %s`, dbname, n.Host, sq))
 	_, err = db.Exec(sq)
 	if err != nil {
-		log.Error(fmt.Sprintf("Node#CreateDatabase(%s) ! %s", dbname, err))
+		log.Error(fmt.Sprintf("Node#CreateDatabase(%s) %s ! %s", dbname, n.Host, err))
 	}
 
 	sq = fmt.Sprintf(`GRANT ALL PRIVILEGES ON DATABASE %s TO %s`, dbname, owner)
-	log.Trace(fmt.Sprintf(`Node#CreateDatabase(%s) > %s`, dbname, sq))
+	log.Trace(fmt.Sprintf(`Node#CreateDatabase(%s) %s > %s`, dbname, n.Host, sq))
 	_, err = db.Query(sq)
 	if err != nil {
-		log.Error(fmt.Sprintf(`Node#CreateDatabase(%s) ! %s`, dbname, err))
+		log.Error(fmt.Sprintf(`Node#CreateDatabase(%s) %s ! %s`, dbname, n.Host, err))
 		return
 	}
 	return nil
@@ -160,20 +160,20 @@ func (n *Node) CreateDatabase(dbname, owner string) (err error) {
 func (n *Node) CreateExtensions(exts []string) (err error) {
 	db, err := n.Connect()
 	if err != nil {
-		log.Error(fmt.Sprintf("Node#CreateExtensions() %s :: %s", n.URI(), err))
+		log.Error(fmt.Sprintf("Node#CreateExtensions() %s ! %s", n.URI(), err))
 		return
 	}
 	defer db.Close()
 
 	_, err = db.Query(`CREATE EXTENSION IF NOT EXISTS btree_gist`)
 	if err != nil {
-		log.Error(fmt.Sprintf("Node#CreateExtensions() %s", err))
+		log.Error(fmt.Sprintf("Node#CreateExtensions() %s ! %s", n.Host, err))
 		return
 	}
 
 	_, err = db.Query(`CREATE EXTENSION IF NOT EXISTS bdr`)
 	if err != nil {
-		log.Error(fmt.Sprintf("Node#CreateExtensions() %s", err))
+		log.Error(fmt.Sprintf("Node#CreateExtensions() %s ! %s", n.Host, err))
 		return
 	}
 	return

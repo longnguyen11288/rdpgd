@@ -48,18 +48,19 @@ CREATE TABLE IF NOT EXISTS cfsb.plans (
 	"bdr_nodes_dsn": `SELECT node_local_dsn FROM bdr.bdr_nodes;`,
 	"create_table_cfsb_instances": `
 CREATE TABLE IF NOT EXISTS cfsb.instances (
-  id              BIGSERIAL PRIMARY KEY NOT NULL,
-  instance_id     TEXT      NOT NULL,
-  service_id      TEXT      NOT NULL,
-  plan_id         TEXT      NOT NULL,
-  organization_id TEXT      NOT NULL,
-  space_id        TEXT      NOT NULL,
-  dbname          TEXT      NOT NULL,
-  uname           TEXT      NOT NULL,
-  pass            TEXT      NOT NULL,
-  created_at      timestamp DEFAULT CURRENT_TIMESTAMP,
-  effective_at    timestamp DEFAULT CURRENT_TIMESTAMP,
-  ineffective_at  timestamp
+  id                BIGSERIAL PRIMARY KEY NOT NULL,
+  instance_id       TEXT      NOT NULL,
+  service_id        TEXT      NOT NULL,
+  plan_id           TEXT      NOT NULL,
+  organization_id   TEXT      NOT NULL,
+  space_id          TEXT      NOT NULL,
+  dbname            TEXT      NOT NULL,
+  uname             TEXT      NOT NULL,
+  pass              TEXT      NOT NULL,
+  created_at        timestamp DEFAULT CURRENT_TIMESTAMP,
+  effective_at      timestamp DEFAULT CURRENT_TIMESTAMP,
+  ineffective_at    timestamp,
+  decommissioned_at timestamp
 );`,
 	"create_table_cfsb_bindings": `
 CREATE TABLE IF NOT EXISTS cfsb.bindings (
@@ -117,10 +118,12 @@ BEGIN
   SET datallowconn = 'false' 
   WHERE datname = name;
 
+  EXECUTE 'ALTER DATABASE ' || name || ' OWNER TO postgres;';
+
   PERFORM pg_terminate_backend(pg_stat_activity.pid) 
   FROM pg_stat_activity 
   WHERE pg_stat_activity.datname = name
-	AND pid <> pg_backend_pid();
+  AND pid <> pg_backend_pid();
 
   FOR r IN 
     SELECT slot_name 
