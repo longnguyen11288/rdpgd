@@ -72,7 +72,7 @@ case ${action} in
     ;;
   (tunnel)
     echo "Password when prompted: c1oudc0w"
-    exec ssh  -L 55432:127.0.0.1:5432 vcap@10.244.2.2
+    exec ssh  -L 55432:127.0.0.1:7432 vcap@10.244.2.2
     ;;
   (test)
     exec go test
@@ -129,5 +129,18 @@ case ${action} in
     then fail "A version must be given for the release."
     fi
     final_release
+    ;;
+  (cf_integration_test)
+    set -v
+    cf create-service-broker rdpg cfadmin cfadmin http://10.244.2.2:8888
+    cf enable-service-access rdpg -o $USER
+    cf marketplace
+    cf create-service rdpg shared rdpg-service-1
+    cf services
+    cf bind-service rdpg-cf-service-checks rdpg-service-1
+    cf restage rdpg-cf-service-checks
+    cf unbind-service rdpg-cf-service-checks rdpg-service-1
+    cf delete-service rdpg-service-1
+    set +v
     ;;
 esac

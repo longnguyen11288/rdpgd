@@ -169,7 +169,7 @@ func (r *RDPG) DisableDatabase(dbname string) (err error) {
 		}
 
 		sq := fmt.Sprintf(`UPDATE pg_database SET datallowconn = 'false' WHERE datname = '%s';`, dbname)
-		log.Trace(fmt.Sprintf(`RDPG#DisableDatabase(%s) %s > %s`, dbname, node.Host, sq))
+		log.Trace(fmt.Sprintf(`RDPG#DisableDatabase(%s) DISALLOW %s > %s`, dbname, node.Host, sq))
 		_, err = db.Exec(sq)
 		if err != nil {
 			log.Error(fmt.Sprintf("RDPG#DisableDatabase(%s) DISALLOW %s ! %s", dbname, node.Host, err))
