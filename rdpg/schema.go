@@ -45,8 +45,9 @@ func (r *RDPG) InitSchema() (err error) {
 		"create_table_rdpg_watch_notifications",
 	}
 	for _, key := range keys {
-		k := strings.Replace(strings.Replace(key, "create_table_", "", 1), "_", ".", 1)
-		sq := fmt.Sprintf(`SELECT table_name FROM information_schema.tables where table_schema='%s' AND table_name='%s';`, k[2], k[3])
+		k := strings.Split(strings.Replace(strings.Replace(key, "create_table_", "", 1), "_", ".", 1), ".")
+		sq := fmt.Sprintf(`SELECT table_name FROM information_schema.tables where table_schema='%s' AND table_name='%s';`, k[0], k[1])
+
 		log.Trace(fmt.Sprintf("RDPG#initSchema() %s", sq))
 		if err := db.QueryRow(sq).Scan(&name); err != nil {
 			if err == sql.ErrNoRows {
