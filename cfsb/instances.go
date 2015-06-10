@@ -59,12 +59,12 @@ func FindInstance(instanceId string) (i *Instance, err error) {
 	r := rdpg.New()
 	r.OpenDB()
 	in := Instance{}
-	sq := `SELECT instance_id, service_id, plan_id, organization_id, space_id, dbname, uname, pass 
+	sq := `SELECT id, instance_id, service_id, plan_id, organization_id, space_id, dbname, uname, pass 
 FROM cfsb.instances WHERE instance_id=lower($1) LIMIT 1;`
 	err = r.DB.Get(&in, sq, instanceId)
 	if err != nil {
 		// TODO: Change messaging if err is sql.NoRows then say couldn't find instance with instanceId
-		log.Error(fmt.Sprintf("cfsb.FindInstance(%s) %s", instanceId, err))
+		log.Error(fmt.Sprintf("cfsb.FindInstance(%s) ! %s", instanceId, err))
 	}
 	r.DB.Close()
 	i = &in
@@ -76,22 +76,21 @@ func (i *Instance) Provision() (err error) {
 	r := rdpg.New()
 
 	// TODO: Alter this logic based on "plan"
-
 	err = r.CreateUser(i.User, i.Pass)
 	if err != nil {
-		log.Error(fmt.Sprintf("Instance#Provision() %s", err))
+		log.Error(fmt.Sprintf("Instance#Provision(%s) ! %s", i.InstanceId, err))
 		return err
 	}
 
 	err = r.CreateDatabase(i.Database, i.User)
 	if err != nil {
-		log.Error(fmt.Sprintf("Instance#Provision() %s", err))
+		log.Error(fmt.Sprintf("Instance#Provision(%s) ! %s", i.InstanceId, err))
 		return err
 	}
 
 	err = r.CreateReplicationGroup(i.Database)
 	if err != nil {
-		log.Error(fmt.Sprintf("Instance#Provision() %s", err))
+		log.Error(fmt.Sprintf("Instance#Provision(%s) ! %s", i.InstanceId, err))
 		return err
 	}
 
@@ -102,14 +101,14 @@ VALUES ($1,$2,$3,$4,$5,$6,$7,$8);
 `
 	_, err = r.DB.Query(sq, i.InstanceId, i.ServiceId, i.PlanId, i.OrganizationId, i.SpaceId, i.Database, i.User, i.Pass)
 	if err != nil {
-		log.Error(fmt.Sprintf(`Instance#Provision() %s`, err))
+		log.Error(fmt.Sprintf(`Instance#Provision(%s) ! %s`, i.InstanceId, err))
 	}
 
 	nodes := r.Nodes()
 	for _, node := range nodes {
 		err := node.AdminAPI("PUT", "services/pgbouncer/configure")
 		if err != nil {
-			log.Error(fmt.Sprintf(`Instance#Provision() %s`, err))
+			log.Error(fmt.Sprintf(`Instance#Provision(%s) ! %s`, i.InstanceId, err))
 		}
 	}
 	r.DB.Close()
@@ -120,7 +119,7 @@ func (i *Instance) Remove() (err error) {
 	r := rdpg.New()
 	err = r.DisableDatabase(i.Database)
 	if err != nil {
-		log.Error(fmt.Sprintf("Instance#Remove() %s", err))
+		log.Error(fmt.Sprintf("Instance#Remove(%s) ! %s", i.InstanceId, err))
 		return err
 	}
 
@@ -128,26 +127,27 @@ func (i *Instance) Remove() (err error) {
 	// Question, do we need to "stop" the replication group before dropping the database?
 	err = r.DropDatabase(i.Database)
 	if err != nil {
-		log.Error(fmt.Sprintf("Instance#Remove() %s", err))
+		log.Error(fmt.Sprintf("Instance#Remove(%s) ! %s", i.InstanceId, err))
 		return err
 	}
+
 	err = r.DropUser(i.User)
 	if err != nil {
-		log.Error(fmt.Sprintf("Instance#Remove() %s", err))
+		log.Error(fmt.Sprintf("Instance#Remove(%s) ! %s", i.InstanceId, err))
 		return err
 	}
 
 	r.OpenDB()
-	_, err = r.DB.Exec("UPDATE cfsb.instances SET ineffective_at = CURRENT_TIMESTAMP WHERE id=$1", i.Id)
+	_, err = r.DB.Exec(`UPDATE cfsb.instances SET ineffective_at = CURRENT_TIMESTAMP WHERE id=$1`, i.Id)
 	if err != nil {
-		log.Error(fmt.Sprintf("Instance#Remove() %s", err))
+		log.Error(fmt.Sprintf("Instance#Remove(%s) ! %s", i.InstanceId, err))
 	}
 
 	nodes := r.Nodes()
 	for _, node := range nodes {
 		err := node.AdminAPI("PUT", "services/pgbouncer/configure")
 		if err != nil {
-			log.Error(fmt.Sprintf(`Instance#Provision() %s`, err))
+			log.Error(fmt.Sprintf(`Instance#Provision(%s) ! %s`, i.InstanceId, err))
 		}
 	}
 	r.DB.Close()
@@ -193,7 +193,7 @@ func Instances() (si []Instance, err error) {
 	err = r.DB.Select(&si, sq)
 	if err != nil {
 		// TODO: Change messaging if err is sql.NoRows then say couldn't find instance with instanceId
-		log.Error(fmt.Sprintf("cfsb.Instances() :: %s", err))
+		log.Error(fmt.Sprintf("cfsb.Instances() ! %s", err))
 	}
 	r.DB.Close()
 	return

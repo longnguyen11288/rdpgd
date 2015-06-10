@@ -1,12 +1,11 @@
 {
-	"PackageVersion": "0.0.11",
-	"ConfigVersion": "0.9",
 	"ArtifactsDest": ".releases",
 	"TasksExclude": [
 		"go-test"
 	],
 	"Arch": "amd64",
 	"Os": "linux",
+	"PackageVersion": "0.0.14",
 	"TaskSettings": {
 		"archive-tar-gz": {
 			"platforms": {
@@ -15,9 +14,10 @@
 		},
 		"pkg-build": {
 			"metadata": {
-				"maintainer": "Wayne E. Seguin <wayneeseguin@gmail.com>"
+				"maintainer": "Wayne E. Seguin \u003cwayneeseguin@gmail.com\u003e"
 			},
 			"rmtemp": true
 		}
-	}
+	},
+	"ConfigVersion": "0.9"
 }

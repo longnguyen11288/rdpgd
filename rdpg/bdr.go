@@ -12,7 +12,7 @@ import (
 // TODO: RDPG Struct => RDPG Struct, allowing for multiple instances of RDPG
 func NewRDPG(uri string) *RDPG {
 	if uri == "" || uri[0:13] != "postgresql://" {
-		log.Error(fmt.Sprintf("NewRDPG() uri malformed: '%s'", uri))
+		log.Error(fmt.Sprintf("rdpg.NewRDPG() uri malformed ! %s", uri))
 		return nil
 	}
 	return &RDPG{URI: uri}
@@ -21,7 +21,7 @@ func NewRDPG(uri string) *RDPG {
 func (r *RDPG) connect() (db *sqlx.DB, err error) {
 	db, err = sqlx.Connect("postgres", r.URI)
 	if err != nil {
-		log.Error(fmt.Sprintf("rdpg.Node#Connect(): %s :: %s", r.URI, err))
+		log.Error(fmt.Sprintf("rdpg.Node#Connect() %s ! %s", r.URI, err))
 	}
 	return db, err
 }
@@ -29,7 +29,7 @@ func (r *RDPG) connect() (db *sqlx.DB, err error) {
 func (r *RDPG) Nodes() (nodes []Node) {
 	db, err := r.connect()
 	if err != nil {
-		log.Error(fmt.Sprintf("RDPG#Nodes() %s", err))
+		log.Error(fmt.Sprintf("RDPG#Nodes() ! %s", err))
 	}
 
 	// TODO: Populate list of rdpg nodes for given URL,
@@ -42,7 +42,7 @@ func (r *RDPG) Nodes() (nodes []Node) {
 	dsns := []dsn{}
 	err = db.Select(&dsns, SQL["bdr_nodes_dsn"])
 	if err != nil {
-		log.Error(fmt.Sprintf("RDPG#Nodes()  :: %s", SQL["bdr_nodes"], err))
+		log.Error(fmt.Sprintf("RDPG#Nodes() %s ! %s", SQL["bdr_nodes"], err))
 	}
 
 	for _, t := range dsns {
@@ -73,25 +73,25 @@ func (r *RDPG) CreateUser(username, password string) (err error) {
 		node.Database = `postgres`
 		db, err := node.Connect()
 		if err != nil {
-			log.Error(fmt.Sprintf(`RDPG#CreateUser() %s`, err))
+			log.Error(fmt.Sprintf(`RDPG#CreateUser(%s) %s ! %s`, username, node.Host, err))
 			return err
 		}
 
 		// TODO: Check if user exists first
 		sq := fmt.Sprintf(`CREATE USER %s;`, username)
-		log.Trace(sq)
+		log.Trace(fmt.Sprintf(`RDPG#CreateUser(%s) %s > %s`, username, node.Host, sq))
 		_, err = db.Exec(sq)
 		if err != nil {
-			log.Error(fmt.Sprintf("RDPG#CreateUser() %s %s", username, err))
+			log.Error(fmt.Sprintf("RDPG#CreateUser(%s) %s ! %s", username, node.Host, err))
 			db.Close()
 			return err
 		}
 
 		sq = fmt.Sprintf(`ALTER USER %s ENCRYPTED PASSWORD '%s'`, username, password)
-		log.Trace(sq)
+		log.Trace(fmt.Sprintf(`RDPG#CreateUser(%s) %s > %s`, node.Host, sq))
 		_, err = db.Exec(sq)
 		if err != nil {
-			log.Error(fmt.Sprintf("RDPG#CreateUser() %s %s", username, err))
+			log.Error(fmt.Sprintf("RDPG#CreateUser(%s) %s ! %s", username, node.Host, err))
 		}
 		db.Close()
 	}
@@ -129,7 +129,7 @@ func (r *RDPG) CreateReplicationGroup(dbname string) (err error) {
 			break
 		}
 		sq := ""
-		name := fmt.Sprintf("%s%d", dbname, index)
+		name := fmt.Sprintf("%s", node.Host)
 		if index == 0 {
 			sq = fmt.Sprintf(`SELECT bdr.bdr_group_create(
 				local_node_name := '%s',
@@ -145,18 +145,18 @@ func (r *RDPG) CreateReplicationGroup(dbname string) (err error) {
 				nodes[0].Host, nodes[0].Port, nodes[0].User, dbname,
 			)
 		}
-		log.Trace(fmt.Sprintf(`RDPG#CreateReplicationGroup() %s`, sq))
+		log.Trace(fmt.Sprintf(`RDPG#CreateReplicationGroup(%s) %s > %s`, dbname, node.Host, sq))
 		_, err = db.Exec(sq)
 		if err == nil {
 			sq = `SELECT bdr.bdr_node_join_wait_for_ready();`
-			log.Trace(sq)
+			log.Trace(fmt.Sprintf(`RDPG#CreateReplicationGroup(%s) %s ! %s`, dbname, node.Host, sq))
 			_, err = db.Exec(sq)
 		}
 		db.Close()
 	}
 	if err != nil {
 		// Cleanup in BDR currently requires droping the database and trying again...
-		log.Error(fmt.Sprintf("CreateReplicationGroup() %s", err))
+		log.Error(fmt.Sprintf("CreateReplicationGroup(%s) ! %s", dbname, err))
 	}
 	return err
 }
@@ -166,24 +166,29 @@ func (r *RDPG) DisableDatabase(dbname string) (err error) {
 		node.Database = "postgres"
 		db, err := node.Connect()
 		if err != nil {
-			log.Error(fmt.Sprintf("CreateReplicationGroup() %s", err))
+			log.Error(fmt.Sprintf("CreateReplicationGroup(%s) %s ! %s", dbname, node.Host, err))
 			return err
 		}
 
-		sq := fmt.Sprintf(`UPDATE pg_database SET datallowconn = 'false' WHERE datname = '%s';`, dbname)
+		sq := fmt.Sprintf(`UPDATE pg_database SET datallowconn = 'false' WHERE datname = %s;`, dbname)
+		log.Trace(fmt.Sprintf(`RDPG#DisableDatabase(%s) %s > %s`, dbname, node.Host, sq))
 		_, err = db.Exec(sq)
 		if err != nil {
-			log.Error(fmt.Sprintf("RDPG#DisableDatabase(): DISALLOW %s :: %s", dbname, err))
+			log.Error(fmt.Sprintf("RDPG#DisableDatabase(%s) DISALLOW %s ! %s", dbname, node.Host, err))
 		}
 
-		_, err = db.Exec(`SELECT pg_terminate_backend(pg_stat_activity.pid) FROM pg_stat_activity WHERE pg_stat_activity.datname = $1 AND pid <> pg_backend_pid()`, dbname)
+		sq = fmt.Sprintf(`SELECT pg_terminate_backend(pg_stat_activity.pid) FROM pg_stat_activity WHERE pg_stat_activity.datname = %s AND pid <> pg_backend_pid()`, dbname)
+		log.Trace(fmt.Sprintf(`RDPG#DisableDatabase(%s) TERMINATE %s > %s`, dbname, node.Host, sq))
+		_, err = db.Exec(sq)
 		if err != nil {
-			log.Error(fmt.Sprintf("RDPG#DisableDatabase(): TERMINATE %s :: %s", dbname, err))
+			log.Error(fmt.Sprintf("RDPG#DisableDatabase(%s) TERMINATE %s ! %s", dbname, node.Host, err))
 		}
 
-		_, err = db.Exec("ALTER DATABASE %s OWNER TO %s", dbname, node.User)
+		sq = fmt.Sprintf(`ALTER DATABASE %s OWNER TO %s`, dbname, node.User)
+		log.Trace(fmt.Sprintf(`RDPG#DisableDatabase(%s) OWNER %s > %s`, dbname, node.Host, sq))
+		_, err = db.Exec(sq)
 		if err != nil {
-			log.Error(fmt.Sprintf("RDPG#DisableDatabase(): TERMINATE %s :: %s", dbname, err))
+			log.Error(fmt.Sprintf("RDPG#DisableDatabase(%s) OWNER %s ! %s", dbname, node.Host, err))
 		}
 		db.Close()
 	}
@@ -192,7 +197,7 @@ func (r *RDPG) DisableDatabase(dbname string) (err error) {
 }
 
 func (r *RDPG) BackupDatabase(dbname string) (err error) {
-	log.Error("RDPG#BackupDatabase() TODO: IMPLEMENT")
+	log.Error(fmt.Sprintf("RDPG#BackupDatabase(%s) TODO: IMPLEMENT", dbname))
 	return nil
 }
 
@@ -201,14 +206,16 @@ func (r *RDPG) DropDatabase(dbname string) (err error) {
 		node.Database = "postgres"
 		db, err := node.Connect()
 		if err != nil {
-			log.Error(fmt.Sprintf("CreateReplicationGroup() %s", err))
+			log.Error(fmt.Sprintf("RDPG#DropDatabase(%s) %s ! %s", dbname, node.Host, err))
 			return err
 		}
 
-		sq := fmt.Sprintf(`DROP DATABASE IF EXISTS "%s"`, dbname)
+		// TODO: How do we drop a database in bdr properly?
+		sq := fmt.Sprintf(`DROP DATABASE IF EXISTS %s`, dbname)
+		log.Trace(fmt.Sprintf(`RDPG#DropDatabase(%s) %s > %s`, dbname, node.Host, sq))
 		_, err = db.Exec(sq)
 		if err != nil {
-			log.Error(fmt.Sprintf("RDPG#DeleteDatabase(): DROP %s :: %s", dbname, err))
+			log.Error(fmt.Sprintf("RDPG#DropDatabase(%s) %s ! %s", dbname, node.Host, err))
 		}
 		db.Close()
 	}
@@ -220,13 +227,15 @@ func (r *RDPG) DropUser(name string) (err error) {
 		node.Database = "postgres"
 		db, err := node.Connect()
 		if err != nil {
-			log.Error(fmt.Sprintf("CreateReplicationGroup() %s", err))
+			log.Error(fmt.Sprintf("RDPG#DropUser(%s) %s ! %s", name, node.Host, err))
 			return err
 		}
+
 		sq := fmt.Sprintf(`DROP USER %s`, name)
+		log.Trace(fmt.Sprintf(`RDPG#DropUser(%s) %s > %s`, name, node.Host, sq))
 		_, err = db.Exec(sq)
 		if err != nil {
-			log.Error(fmt.Sprintf("RDPG#DeleteUser(): %s :: %s", name, err))
+			log.Error(fmt.Sprintf("RDPG#DropUser(%s) %s ! %s", name, node.Host, err))
 		}
 		db.Close()
 	}
