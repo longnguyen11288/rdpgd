@@ -147,7 +147,7 @@ func (r *RDPG) CreateReplicationGroup(dbname string) (err error) {
 		_, err = db.Exec(sq)
 		if err == nil {
 			sq = `SELECT bdr.bdr_node_join_wait_for_ready();`
-			log.Trace(fmt.Sprintf(`RDPG#CreateReplicationGroup(%s) %s ! %s`, dbname, node.Host, sq))
+			log.Trace(fmt.Sprintf(`RDPG#CreateReplicationGroup(%s) %s > %s`, dbname, node.Host, sq))
 			_, err = db.Exec(sq)
 		}
 		db.Close()

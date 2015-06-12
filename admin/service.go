@@ -31,21 +31,23 @@ func (s *Service) Configure() (err error) {
 	case "haproxy":
 		return errors.New(`Service#Configure("haproxy") is not yet implemented`)
 	case "pgbouncer":
+		instances, err := cfsb.Instances()
+		if err != nil {
+			log.Error(fmt.Sprintf("cfsb#Service.Configure(%s) ! %s", s.Name, err))
+			return err
+		}
+
 		pgbConf, err := ioutil.ReadFile(`/var/vcap/jobs/pgbouncer/config/pgbouncer.ini`)
 		if err != nil {
+			log.Error(fmt.Sprintf("cfsb#Service.Configure(%s) ! %s", s.Name, err))
 			return err
 		}
 
 		pgbUsers, err := ioutil.ReadFile(`/var/vcap/jobs/pgbouncer/config/users`)
 		if err != nil {
+			log.Error(fmt.Sprintf("cfsb#Service.Configure(%s) ! %s", s.Name, err))
 			return err
 		}
-
-		instances, err := cfsb.Instances()
-		if err != nil {
-			return err
-		}
-
 		pc := []string{string(pgbConf)}
 		pu := []string{string(pgbUsers)}
 		for _, i := range instances {
@@ -60,17 +62,20 @@ func (s *Service) Configure() (err error) {
 
 		err = ioutil.WriteFile(`/var/vcap/store/pgbouncer/config/pgbouncer.ini`, []byte(strings.Join(pc, "\n")), 0640)
 		if err != nil {
+			log.Error(fmt.Sprintf("cfsb#Service.Configure(%s) ! %s", s.Name, err))
 			return err
 		}
 
 		err = ioutil.WriteFile(`/var/vcap/store/pgbouncer/config/users`, []byte(strings.Join(pu, "\n")), 0640)
 		if err != nil {
+			log.Error(fmt.Sprintf("cfsb#Service.Configure(%s) ! %s", s.Name, err))
 			return err
 		}
 
-		cmd := exec.Command("/var/vcap/jobs/pgbouncer/bin/pgbouncer", "reload")
+		cmd := exec.Command("/var/vcap/jobs/pgbouncer/bin/control", "reload")
 		err = cmd.Run()
 		if err != nil {
+			log.Error(fmt.Sprintf("cfsb#Service.Configure(%s) ! %s", s.Name, err))
 			return err
 		}
 	case "pgbdr":

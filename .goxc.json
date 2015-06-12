@@ -5,7 +5,7 @@
 	],
 	"Arch": "amd64",
 	"Os": "linux",
-	"PackageVersion": "0.0.15",
+	"PackageVersion": "0.0.18",
 	"TaskSettings": {
 		"archive-tar-gz": {
 			"platforms": {

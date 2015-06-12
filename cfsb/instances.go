@@ -169,7 +169,7 @@ func Instances() (si []Instance, err error) {
 	r.OpenDB("rdpg")
 	si = []Instance{}
 	// TODO: Move this into a versioned SQL Function.
-	sq := `SELECT instance_id, service_id, plan_id, organization_id, space_id, dbname, uname, 'md5'||md5(cfsb.instances.pass||uname) as pass FROM cfsb.instances WHERE ineffective_at IS NULL LIMIT 1; `
+	sq := `SELECT instance_id, service_id, plan_id, organization_id, space_id, dbname, uname, 'md5'||md5(cfsb.instances.pass||uname) as pass FROM cfsb.instances WHERE ineffective_at IS NULL; `
 	err = r.DB.Select(&si, sq)
 	if err != nil {
 		// TODO: Change messaging if err is sql.NoRows then say couldn't find instance with instanceId
