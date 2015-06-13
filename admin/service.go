@@ -75,13 +75,13 @@ backend pgbdr_write_master
 			return err
 		}
 
-		pgbConf, err := ioutil.ReadFile(`/var/vcap/jobs/rdpg-agent/config/pgbouncer.ini`)
+		pgbConf, err := ioutil.ReadFile(`/var/vcap/jobs/rdpg-agent/config/pgbouncer/pgbouncer.ini`)
 		if err != nil {
 			log.Error(fmt.Sprintf("cfsb#Service.Configure(%s) ! %s", s.Name, err))
 			return err
 		}
 
-		pgbUsers, err := ioutil.ReadFile(`/var/vcap/jobs/rdpg-agent/config/users`)
+		pgbUsers, err := ioutil.ReadFile(`/var/vcap/jobs/rdpg-agent/config/pgbouncer/users`)
 		if err != nil {
 			log.Error(fmt.Sprintf("cfsb#Service.Configure(%s) ! %s", s.Name, err))
 			return err
