@@ -9,6 +9,7 @@ import (
 
 	"github.com/wayneeseguin/rdpg-agent/cfsb"
 	"github.com/wayneeseguin/rdpg-agent/log"
+	"github.com/wayneeseguin/rdpg-agent/rdpg"
 )
 
 type Service struct {
@@ -28,7 +29,44 @@ func (s *Service) Configure() (err error) {
 	log.Trace(fmt.Sprintf(`Service#Configure(%s)`, s.Name))
 
 	switch s.Name {
+	case "consul":
+		return errors.New(`Service#Configure("consul") is not yet implemented`)
 	case "haproxy":
+		header, err := ioutil.ReadFile(`/var/vcap/jobs/rdpg-agent/config/haproxy/haproxy.cfg.header`)
+		if err != nil {
+			log.Error(fmt.Sprintf("cfsb#Service.Configure(%s) ! %s", s.Name, err))
+			return err
+		}
+
+		r := rdpg.New()
+		nodes := r.Nodes()
+		// TODO: 5432 & 6432 from environmental configuration.
+		// TODO: Should this list come from active Consul registered nodes instead?
+		footer := fmt.Sprintf(`
+frontend pgbdr_write_port
+bind 0.0.0.0:5432
+  mode tcp
+  default_backend pgbdr_write_master
+ 
+backend pgbdr_write_master
+  mode tcp
+	server master %s:6432 check
+	`, nodes[0].Host)
+
+		hc := []string{string(header), footer}
+		err = ioutil.WriteFile(`/var/vcap/jobs/haproxy/config/haproxy.cfg`, []byte(strings.Join(hc, "\n")), 0640)
+		if err != nil {
+			log.Error(fmt.Sprintf("cfsb#Service.Configure(%s) ! %s", s.Name, err))
+			return err
+		}
+
+		cmd := exec.Command("/var/vcap/jobs/haproxy/bin/control", "reload")
+		err = cmd.Run()
+		if err != nil {
+			log.Error(fmt.Sprintf("cfsb#Service.Configure(%s) ! %s", s.Name, err))
+			return err
+		}
+
 		return errors.New(`Service#Configure("haproxy") is not yet implemented`)
 	case "pgbouncer":
 		instances, err := cfsb.Instances()
@@ -37,13 +75,13 @@ func (s *Service) Configure() (err error) {
 			return err
 		}
 
-		pgbConf, err := ioutil.ReadFile(`/var/vcap/jobs/pgbouncer/config/pgbouncer.ini`)
+		pgbConf, err := ioutil.ReadFile(`/var/vcap/jobs/rdpg-agent/config/pgbouncer.ini`)
 		if err != nil {
 			log.Error(fmt.Sprintf("cfsb#Service.Configure(%s) ! %s", s.Name, err))
 			return err
 		}
 
-		pgbUsers, err := ioutil.ReadFile(`/var/vcap/jobs/pgbouncer/config/users`)
+		pgbUsers, err := ioutil.ReadFile(`/var/vcap/jobs/rdpg-agent/config/users`)
 		if err != nil {
 			log.Error(fmt.Sprintf("cfsb#Service.Configure(%s) ! %s", s.Name, err))
 			return err
@@ -80,8 +118,6 @@ func (s *Service) Configure() (err error) {
 		}
 	case "pgbdr":
 		return errors.New(`Service#Configure("pgbdr") is not yet implemented`)
-	case "consul":
-		return errors.New(`Service#Configure("consul") is not yet implemented`)
 	default:
 		return errors.New(fmt.Sprintf(`Service#Configure("%s") is unknown.`, s.Name))
 	}
