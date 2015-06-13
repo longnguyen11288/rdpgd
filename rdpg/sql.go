@@ -85,14 +85,21 @@ CREATE TABLE IF NOT EXISTS cfsb.credentials (
   effective_at   timestamp DEFAULT CURRENT_TIMESTAMP,
   ineffective_at timestamp
 );`,
-	"create_table_rdpg_watch_notifications": `
-CREATE TABLE IF NOT EXISTS rdpg.watch_notifications ( 
+	"create_table_rdpg_consul_watch_notifications": `
+CREATE TABLE IF NOT EXISTS rdpg.consul_watch_notifications ( 
   id BIGSERIAL NOT NULL, 
   node TEXT,
-  message TEXT,
-  raw TEXT,
+  msg TEXT,
   created_at timestamp DEFAULT NOW(), 
-  CONSTRAINT watch_notification_pkey PRIMARY KEY (id, node)
+  CONSTRAINT consul_watch_notification_pkey PRIMARY KEY (id, node)
+);`,
+	"create_table_rdpg_events": `
+CREATE TABLE IF NOT EXISTS rdpg.events ( 
+  id BIGSERIAL NOT NULL PRIMARY KEY, 
+  node TEXT,
+  key TEXT,
+  msg TEXT,
+	created_at timestamp DEFAULT NOW()
 );`,
 	"insert_default_cfsb_services": `
 INSERT INTO cfsb.services (name,description,bindable,dashboard_client)
