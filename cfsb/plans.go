@@ -3,7 +3,7 @@ package cfsb
 import (
 	"fmt"
 
-	"github.com/coreos/go-log/log"
+	"github.com/wayneeseguin/rdpg-agent/log"
 	"github.com/wayneeseguin/rdpg-agent/rdpg"
 )
 

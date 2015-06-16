@@ -139,6 +139,7 @@ func (i *Instance) ExternalDNS() (dns string) {
 	// TODO: Figure out where we'll store and retrieve the external DNS information
 	r := rdpg.New()
 	nodes := r.Nodes()
+	// TODO: Import the external DNS host via env variable configuration.
 	return nodes[0].Host + ":5432"
 }
 

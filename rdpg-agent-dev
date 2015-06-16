@@ -53,7 +53,8 @@ export \
   RDPG_SB_USER=cf \
   RDPG_SB_PASS=cf \
   RDPG_ADMIN_PORT=58888 \
-  RDPG_ADMIN_PG_URI="postgresql://postgres:admin@127.0.0.1:55432/rdpg?sslmode=disable&connect_timeout=5&fallback_application_name=rdpg-agent"
+  RDPG_ADMIN_PG_URI="postgresql://postgres:admin@127.0.0.1:55432/rdpg?sslmode=disable&connect_timeout=5&fallback_application_name=rdpg-agent" \
+  RDPG_SERVICE_DNS="10.244.2.2:8888"
 
 action=$1
 shift || echo "No action given!!"
@@ -132,7 +133,7 @@ case ${action} in
     ;;
   (cf_integration_test)
     set -v
-    cf create-service-broker rdpg cfadmin cfadmin http://10.244.2.2:8888
+    cf create-service-broker rdpg cfadmin cfadmin http://${RDPG_SERVICE_DNS}
     cf enable-service-access rdpg -o $USER
     cf marketplace
     cf create-service rdpg shared rdpg-service-1
