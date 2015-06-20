@@ -38,7 +38,7 @@ func (s *Service) Configure() (err error) {
 			return err
 		}
 
-		r := rdpg.New()
+		r := rdpg.NewRDPG()
 		hosts := r.Hosts()
 		// TODO: 5432 & 6432 from environmental configuration.
 		// TODO: Should this list come from active Consul registered hosts instead?

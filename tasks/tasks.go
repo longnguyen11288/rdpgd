@@ -3,6 +3,8 @@ package tasks
 import (
 	"fmt"
 
+	"code.google.com/p/go-uuid/uuid"
+
 	consulapi "github.com/hashicorp/consul/api"
 	"github.com/wayneeseguin/rdpg-agent/log"
 	"github.com/wayneeseguin/rdpg-agent/rdpg"
@@ -10,12 +12,16 @@ import (
 
 type Task struct {
 	TaskId string `db:"task_id" json:"task_id"`
+	Role   string `db:"data" json:"data"`
 	Action string `db:"action" json:"action"`
 	Data   string `db:"data" json:"data"`
-	Role   string `db:"data" json:"data"`
 	TTL    string `db:"ttl" json:"ttl"`
 	lock   *consulapi.Lock
 	lockCh <-chan struct{}
+}
+
+func NewTask() *Task {
+	return &Task{TaskId: uuid.NewUUID().String()}
 }
 
 // Insert start/stop/(status stuff) into history.backups:
@@ -26,6 +32,7 @@ type Task struct {
 // Insert start/stop/(status stuff) into history.restores
 // host role/type that Task applies to eg. write/read
 
+// Attempt to obtain a consul Lock, return err if lock if fail to obtain lock.
 func (t *Task) Lock() (err error) {
 	client, _ := consulapi.NewClient(consulapi.DefaultConfig())
 	t.lock, err = client.LockKey(fmt.Sprintf("rdpg/work/tasks/%s/lock", t.TaskId))
@@ -50,7 +57,7 @@ func (t *Task) Unlock() (err error) {
 
 func (t *Task) Enqueue() (err error) {
 	// Save Task to database queue.
-	r := rdpg.New()
+	r := rdpg.NewRDPG()
 	err = r.OpenDB("rdpg")
 	if err != nil {
 		log.Error(fmt.Sprintf(`tasks.Enqueue() Opening rdpg database ! %s`, err))
@@ -70,7 +77,7 @@ func (t *Task) Dequeue() (err error) {
 		return
 	}
 
-	r := rdpg.New()
+	r := rdpg.NewRDPG()
 	err = r.OpenDB("rdpg")
 	if err != nil {
 		t.Unlock()

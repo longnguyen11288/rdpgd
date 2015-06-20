@@ -28,7 +28,7 @@ func RemoveDatabase(data string) (err error) {
 	}
 	log.Trace(fmt.Sprintf("worker.RemoveDatabase() > Leader."))
 
-	r := rdpg.New()
+	r := rdpg.NewRDPG()
 	ids := []string{}
 	sq := fmt.Sprintf(`SELECT instance_id from cfsbapi.instances WHERE ineffective_at IS NOT NULL AND ineffective_at < CURRENT_TIMESTAMP AND decommissioned_at IS NULL`)
 	err = r.DB.Select(&ids, sq)

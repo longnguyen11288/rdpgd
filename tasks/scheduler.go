@@ -49,7 +49,7 @@ func Scheduler() {
 			continue
 		}
 
-		r := rdpg.New()
+		r := rdpg.NewRDPG()
 		err = r.OpenDB("rdpg")
 		if err != nil {
 			log.Error(fmt.Sprintf(`scheduler.Scheduler() Opening rdpg database ! %s`, err))
@@ -60,15 +60,17 @@ func Scheduler() {
 		schedules := []Schedule{}
 
 		// Leader, lets get Scheduling!
-		// Duration + scheduled_at
-		sq := fmt.Sprintf(`SELECT schedule_id,schedule,action,data,ttl,scheduled_at FROM rdpg.schedules WHERE scheduling_at IS NULL;`)
+		// Duration + last_scheduled_at
+		sq := fmt.Sprintf(`SELECT schedule_id,schedule,role,action,data,ttl,last_scheduled_at FROM rdpg.schedules WHERE scheduling_at IS NULL;`)
 		err = r.DB.Select(&schedules, sq)
 		if err != nil {
 			log.Error(fmt.Sprintf(`scheduler.Dequeue() Selecting Schedules ! %s`, err))
 			Unlock()
 			continue
 		}
-		// TODO: Schedule
+		// TODO: Schedule tasks...
+		// task := NewTask()
+		//
 		Unlock() // Release Consul K/V Lock.
 	}
 }

@@ -1,3 +1,4 @@
+could not import "/Users/wayneeseguin/projects/go/src/github.com/wayneeseguin/rdpg-agent/tasks": found packages scheduler.go (scheduler) and tasks.go (tasks) in /Users/wayneeseguin/projects/go/src/github.com/wayneeseguin/rdpg-agent/tasks
 package main
 
 import (
@@ -12,8 +13,6 @@ import (
 	"github.com/wayneeseguin/rdpg-agent/cfsbapi"
 	"github.com/wayneeseguin/rdpg-agent/log"
 	"github.com/wayneeseguin/rdpg-agent/rdpg"
-	"github.com/wayneeseguin/rdpg-agent/scheduler"
-	"github.com/wayneeseguin/rdpg-agent/workers"
 )
 
 var (
@@ -54,7 +53,7 @@ func main() {
 		}
 	}()
 
-	r := rdpg.New()
+	r := rdpg.NewRDPG()
 	err := r.OpenDB("rdpg")
 	if err != nil {
 		log.Error(err.Error())
@@ -64,9 +63,9 @@ func main() {
 
 	go cfsbapi.Listen()
 
-	go scheduler.Schedule()
+	go tasks.Schedule()
 
-	go workers.Work()
+	go tasks.Work()
 
 	adminapi.Listen()
 }
@@ -78,7 +77,7 @@ func ParseArgs() {
 		}
 		switch arg {
 		case "init":
-			r := rdpg.New()
+			r := rdpg.NewRDPG()
 			err := r.OpenDB("rdpg")
 			if err != nil {
 				fmt.Fprintf(os.Stderr, "%s\n", err)

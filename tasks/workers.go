@@ -11,13 +11,14 @@ import (
 
 func Work() {
 	for {
-		r := rdpg.New()
+		r := rdpg.NewRDPG()
 		err := r.OpenDB("rdpg")
 		if err != nil {
 			log.Error(fmt.Sprintf(`tasks.Dequeue() Opening rdpg database ! %s`, err))
 		}
 
 		// TODO: only work for my role type: write vs read
+		// eg. WHERE role = 'read'
 		task := tasks.Task{}
 		sq := `SELECT task_id,func,data,ttl FROM work.tasks WHERE processed_at IS NULL AND locked_by IS NULL ORDER BY created_at DESC LIMIT 1;`
 		err = r.DB.Select(&task, sq)
@@ -38,8 +39,10 @@ func Work() {
 		case "BackupAllDatabases":
 			// Role: read
 			err = BackupAllDatabases(task.Data)
+		case "PrecreateCreateDatabase":
+			err = PrecreateDatabase
 		default:
-			err = fmt.Errorf(`worker.Work() Unknown Task Func %s`, task.Action)
+			err = fmt.Errorf(`worker.Work() Unknown Task Action %s`, task.Action)
 		}
 
 		if err != nil {

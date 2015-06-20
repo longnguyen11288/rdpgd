@@ -48,7 +48,7 @@ func CreateBinding(instanceId, bindingId string) (binding *Binding, err error) {
 		Database: instance.Database,
 	}
 
-	r := rdpg.New()
+	r := rdpg.NewRDPG()
 	r.OpenDB("rdpg")
 
 	sq := `INSERT INTO cfsbapi.bindings (instance_id,binding_id) VALUES ($1,$2);`
@@ -74,7 +74,7 @@ func RemoveBinding(bindingId string) (binding *Binding, err error) {
 		log.Error(fmt.Sprintf(`cfsbapi.CreateBinding(%s) ! %s`, bindingId, err))
 		return
 	}
-	r := rdpg.New()
+	r := rdpg.NewRDPG()
 	sq := `UPDATE cfsbapi.bindings SET ineffective_at = CURRENT_TIMESTAMP WHERE binding_id = $1;`
 	log.Trace(fmt.Sprintf(`cfsbapi.RemoveBinding(%s) > %s`, bindingId, sq))
 	r.OpenDB("rdpg")
@@ -87,7 +87,7 @@ func RemoveBinding(bindingId string) (binding *Binding, err error) {
 }
 
 func FindBinding(bindingId string) (binding *Binding, err error) {
-	r := rdpg.New()
+	r := rdpg.NewRDPG()
 	b := Binding{}
 	sq := `SELECT id,instance_id, binding_id FROM cfsbapi.bindings WHERE binding_id=lower($1) LIMIT 1;`
 	log.Trace(fmt.Sprintf(`cfsbapi.FindBinding(%s) > %s`, bindingId, sq))

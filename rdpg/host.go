@@ -80,6 +80,7 @@ func (n *Host) URI() (uri string) {
 	return
 }
 
+// Create a given user on a single target host.
 func (n *Host) CreateUser(name, password string) (err error) {
 	if n.User != `postgres` {
 		return errors.New(fmt.Sprintf(`Host user is not postgres, can not create a user with '%s'`, n.User))
@@ -123,6 +124,7 @@ func (n *Host) CreateUser(name, password string) (err error) {
 	return nil
 }
 
+// Create a given database and owner on a single target host.
 func (n *Host) CreateDatabase(dbname, owner string) (err error) {
 	n.Database = "postgres"
 	db, err := n.Connect()
@@ -157,6 +159,7 @@ func (n *Host) CreateDatabase(dbname, owner string) (err error) {
 	return nil
 }
 
+// Create extensions on a single target host.
 func (n *Host) CreateExtensions(exts []string) (err error) {
 	db, err := n.Connect()
 	if err != nil {

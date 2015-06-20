@@ -2,73 +2,15 @@ package rdpg
 
 import (
 	"fmt"
-	"strings"
 
-	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
 	"github.com/wayneeseguin/rdpg-agent/log"
 )
 
-// TODO: RDPG Struct => RDPG Struct, allowing for multiple instances of RDPG
-func NewRDPG(uri string) *RDPG {
-	if uri == "" || uri[0:13] != "postgresql://" {
-		log.Error(fmt.Sprintf("rdpg.NewRDPG() uri malformed ! %s", uri))
-		return nil
-	}
-	return &RDPG{URI: uri}
-}
-
-func (r *RDPG) connect() (db *sqlx.DB, err error) {
-	db, err = sqlx.Connect("postgres", r.URI)
-	if err != nil {
-		log.Error(fmt.Sprintf("rdpg.Host#Connect() %s ! %s", r.URI, err))
-	}
-	return db, err
-}
-
-func (r *RDPG) Hosts() (hosts []Host) {
-	db, err := r.connect()
-	if err != nil {
-		log.Error(fmt.Sprintf("RDPG#Hosts() ! %s", err))
-	}
-
-	// TODO: Populate list of rdpg hosts for given URL,
-	//`SELECT node_local_dsn FROM bdr.bdr_nodes INTO rdpg.hosts (node_local_dsn);`
-
-	type dsn struct {
-		DSN string `db:"node_local_dsn"`
-	}
-
-	dsns := []dsn{}
-	err = db.Select(&dsns, SQL["bdr_nodes_dsn"])
-	if err != nil {
-		log.Error(fmt.Sprintf("RDPG#Hosts() %s ! %s", SQL["bdr_nodes"], err))
-	}
-
-	for _, t := range dsns {
-		host := Host{}
-		s := strings.Split(t.DSN, " ")
-		host.LocalDSN = t.DSN
-		host.Host = strings.Split(s[0], "=")[1]
-		host.Port = strings.Split(s[1], "=")[1]
-		host.User = strings.Split(s[2], "=")[1]
-		host.Database = `postgres` // strings.Split(s[3], "=")[1]
-		hosts = append(hosts, host)
-	}
-	// TODO: Get this information into the database and then out of the rdpg.hosts
-	//rows, err := db.Query("SELECT host,port,user,'postgres' FROM rdpg.hosts;")
-	//if err != nil {
-	//	log.Error(fmt.Sprintf("Hosts() %s", err))
-	//} else {
-	//	sqlx.StructScan(rows, hosts)
-	//}
-	db.Close()
-	return hosts
-}
-
 func (r *RDPG) CreateUser(username, password string) (err error) {
 	for _, host := range r.Hosts() {
 		host.Database = `postgres`
+		// TODO: Switch to using host.CreateUser() after allowing to specify a list of roles (SUPERUSER, etc...)
 		db, err := host.Connect()
 		if err != nil {
 			log.Error(fmt.Sprintf(`RDPG#CreateUser(%s) %s ! %s`, username, host.Host, err))
@@ -164,6 +106,7 @@ func (r *RDPG) DisableDatabase(dbname string) (err error) {
 	for i := len(hosts) - 1; i >= 0; i-- {
 		host := hosts[i]
 
+		// TODO: move this into host.DisableDatabase()
 		host.Database = "postgres"
 		db, err := host.Connect()
 		if err != nil {
@@ -193,6 +136,7 @@ func (r *RDPG) DropDatabase(dbname string) (err error) {
 		host := hosts[i]
 
 		host.Database = "postgres"
+		// TODO: move this into host.DropDatabase()
 		db, err := host.Connect()
 		if err != nil {
 			log.Error(fmt.Sprintf("RDPG#DropDatabase(%s) %s ! %s", dbname, host.Host, err))
@@ -226,6 +170,7 @@ func (r *RDPG) DropUser(name string) (err error) {
 			return err
 		}
 
+		// TODO: move this into host.DropUser()
 		sq := fmt.Sprintf(`DROP USER %s`, name)
 		log.Trace(fmt.Sprintf(`RDPG#DropUser(%s) %s > %s`, name, host.Host, sq))
 		_, err = db.Exec(sq)

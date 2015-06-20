@@ -123,8 +123,7 @@ CREATE TABLE IF NOT EXISTS rdpg.schedules (
   data TEXT NOT NULL,
   enabled BOOLEAN DEFAULT true,
   created_at TIMESTAMP DEFAULT NOW(),
-  scheduling_at TIMESTAMP
-  scheduled_at TIMESTAMP,
+  last_scheduled_at TIMESTAMP,
 );`,
 	"create_table_rdpg_config": `
 CREATE TABLE IF NOT EXISTS rdpg.config ( 

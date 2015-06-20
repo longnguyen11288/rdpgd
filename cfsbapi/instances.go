@@ -57,7 +57,7 @@ func NewInstance(instanceId, serviceId, planId, organizationId, spaceId string) 
 }
 
 func ActiveInstances() (is []Instance, err error) {
-	r := rdpg.New()
+	r := rdpg.NewRDPG()
 	sq := ` SELECT id, instance_id, service_id, plan_id, organization_id, space_id, dbname, uname, pass 
 	FROM cfsbapi.instances 
 	WHERE effective_at IS NOT NULL AND decommissioned_at IS NULL
@@ -73,7 +73,7 @@ func ActiveInstances() (is []Instance, err error) {
 }
 
 func FindInstance(instanceId string) (i *Instance, err error) {
-	r := rdpg.New()
+	r := rdpg.NewRDPG()
 	in := Instance{}
 	sq := `SELECT id, instance_id, service_id, plan_id, organization_id, space_id, dbname, uname, pass FROM cfsbapi.instances WHERE instance_id=lower($1) LIMIT 1;`
 	r.OpenDB("rdpg")
@@ -89,7 +89,7 @@ func FindInstance(instanceId string) (i *Instance, err error) {
 
 func (i *Instance) Provision() (err error) {
 	i.Pass = strings.ToLower(strings.Replace(rdpg.NewUUID().String(), "-", "", -1))
-	r := rdpg.New()
+	r := rdpg.NewRDPG()
 
 	// TODO: Alter this logic based on "plan"
 	err = r.CreateUser(i.User, i.Pass)
@@ -132,7 +132,7 @@ VALUES ($1,$2,$3,$4,$5,$6,$7,$8);
 }
 
 func (i *Instance) Remove() (err error) {
-	r := rdpg.New()
+	r := rdpg.NewRDPG()
 	r.OpenDB("rdpg")
 	_, err = r.DB.Exec(`UPDATE cfsbapi.instances SET ineffective_at = CURRENT_TIMESTAMP WHERE id=$1`, i.Id)
 	if err != nil {
@@ -153,7 +153,7 @@ func (i *Instance) Remove() (err error) {
 
 func (i *Instance) ExternalDNS() (dns string) {
 	// TODO: Figure out where we'll store and retrieve the external DNS information
-	r := rdpg.New()
+	r := rdpg.NewRDPG()
 	hosts := r.Hosts()
 	// TODO: Import the external DNS host via env variable configuration.
 	return hosts[0].Host + ":5432"
@@ -182,7 +182,7 @@ func (i *Instance) JDBCURI() (uri string) {
 }
 
 func Instances() (si []Instance, err error) {
-	r := rdpg.New()
+	r := rdpg.NewRDPG()
 	r.OpenDB("rdpg")
 	si = []Instance{}
 	// TODO: Move this into a versioned SQL Function.
