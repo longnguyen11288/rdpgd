@@ -1,4 +1,4 @@
-package admin
+package adminapi
 
 import (
 	"errors"
@@ -7,7 +7,7 @@ import (
 	"os/exec"
 	"strings"
 
-	"github.com/wayneeseguin/rdpg-agent/cfsb"
+	"github.com/wayneeseguin/rdpg-agent/cfsbapi"
 	"github.com/wayneeseguin/rdpg-agent/log"
 	"github.com/wayneeseguin/rdpg-agent/rdpg"
 )
@@ -34,14 +34,14 @@ func (s *Service) Configure() (err error) {
 	case "haproxy":
 		header, err := ioutil.ReadFile(`/var/vcap/jobs/rdpg-agent/config/haproxy/haproxy.cfg.header`)
 		if err != nil {
-			log.Error(fmt.Sprintf("cfsb#Service.Configure(%s) ! %s", s.Name, err))
+			log.Error(fmt.Sprintf("cfsbapi#Service.Configure(%s) ! %s", s.Name, err))
 			return err
 		}
 
 		r := rdpg.New()
-		nodes := r.Nodes()
+		hosts := r.Hosts()
 		// TODO: 5432 & 6432 from environmental configuration.
-		// TODO: Should this list come from active Consul registered nodes instead?
+		// TODO: Should this list come from active Consul registered hosts instead?
 		footer := fmt.Sprintf(`
 frontend pgbdr_write_port
 bind 0.0.0.0:5432
@@ -51,39 +51,39 @@ bind 0.0.0.0:5432
 backend pgbdr_write_master
   mode tcp
 	server master %s:6432 check
-	`, nodes[0].Host)
+	`, hosts[0].Host)
 
 		hc := []string{string(header), footer}
 		err = ioutil.WriteFile(`/var/vcap/jobs/haproxy/config/haproxy.cfg`, []byte(strings.Join(hc, "\n")), 0640)
 		if err != nil {
-			log.Error(fmt.Sprintf("cfsb#Service.Configure(%s) ! %s", s.Name, err))
+			log.Error(fmt.Sprintf("cfsbapi#Service.Configure(%s) ! %s", s.Name, err))
 			return err
 		}
 
 		cmd := exec.Command("/var/vcap/jobs/haproxy/bin/control", "reload")
 		err = cmd.Run()
 		if err != nil {
-			log.Error(fmt.Sprintf("cfsb#Service.Configure(%s) ! %s", s.Name, err))
+			log.Error(fmt.Sprintf("cfsbapi#Service.Configure(%s) ! %s", s.Name, err))
 			return err
 		}
 
 		return errors.New(`Service#Configure("haproxy") is not yet implemented`)
 	case "pgbouncer":
-		instances, err := cfsb.Instances()
+		instances, err := cfsbapi.Instances()
 		if err != nil {
-			log.Error(fmt.Sprintf("cfsb#Service.Configure(%s) ! %s", s.Name, err))
+			log.Error(fmt.Sprintf("cfsbapi#Service.Configure(%s) ! %s", s.Name, err))
 			return err
 		}
 
 		pgbConf, err := ioutil.ReadFile(`/var/vcap/jobs/rdpg-agent/config/pgbouncer/pgbouncer.ini`)
 		if err != nil {
-			log.Error(fmt.Sprintf("cfsb#Service.Configure(%s) ! %s", s.Name, err))
+			log.Error(fmt.Sprintf("cfsbapi#Service.Configure(%s) ! %s", s.Name, err))
 			return err
 		}
 
 		pgbUsers, err := ioutil.ReadFile(`/var/vcap/jobs/rdpg-agent/config/pgbouncer/users`)
 		if err != nil {
-			log.Error(fmt.Sprintf("cfsb#Service.Configure(%s) ! %s", s.Name, err))
+			log.Error(fmt.Sprintf("cfsbapi#Service.Configure(%s) ! %s", s.Name, err))
 			return err
 		}
 		pc := []string{string(pgbConf)}
@@ -100,20 +100,20 @@ backend pgbdr_write_master
 
 		err = ioutil.WriteFile(`/var/vcap/store/pgbouncer/config/pgbouncer.ini`, []byte(strings.Join(pc, "\n")), 0640)
 		if err != nil {
-			log.Error(fmt.Sprintf("cfsb#Service.Configure(%s) ! %s", s.Name, err))
+			log.Error(fmt.Sprintf("cfsbapi#Service.Configure(%s) ! %s", s.Name, err))
 			return err
 		}
 
 		err = ioutil.WriteFile(`/var/vcap/store/pgbouncer/config/users`, []byte(strings.Join(pu, "\n")), 0640)
 		if err != nil {
-			log.Error(fmt.Sprintf("cfsb#Service.Configure(%s) ! %s", s.Name, err))
+			log.Error(fmt.Sprintf("cfsbapi#Service.Configure(%s) ! %s", s.Name, err))
 			return err
 		}
 
 		cmd := exec.Command("/var/vcap/jobs/pgbouncer/bin/control", "reload")
 		err = cmd.Run()
 		if err != nil {
-			log.Error(fmt.Sprintf("cfsb#Service.Configure(%s) ! %s", s.Name, err))
+			log.Error(fmt.Sprintf("cfsbapi#Service.Configure(%s) ! %s", s.Name, err))
 			return err
 		}
 	case "pgbdr":

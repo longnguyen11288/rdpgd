@@ -1,4 +1,4 @@
-package admin
+package adminapi
 
 import (
 	"fmt"
@@ -18,9 +18,9 @@ func Check(check string) (status int) {
 
 	switch check {
 	case "ha_pb_pg":
-		var numNodes int
-		r.DB.Get(&numNodes, "SELECT count(node_name) FROM bdr.bdr_nodes;")
-		if numNodes < 3 {
+		var numHosts int
+		r.DB.Get(&numHosts, "SELECT count(node_name) FROM bdr.bdr_nodes;")
+		if numHosts < 3 {
 			return http.StatusInternalServerError
 		}
 	default:

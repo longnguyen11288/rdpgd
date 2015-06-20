@@ -1,4 +1,4 @@
-package cfsb
+package cfsbapi
 
 import (
 	"encoding/base64"
@@ -36,7 +36,7 @@ func init() {
 	}
 }
 
-func API() {
+func Listen() {
 	CFSBMux := http.NewServeMux()
 	router := mux.NewRouter()
 	router.HandleFunc("/v2/catalog", httpAuth(CatalogHandler))

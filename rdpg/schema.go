@@ -10,10 +10,10 @@ import (
 	"github.com/wayneeseguin/rdpg-agent/log"
 )
 
-// TODO: This should only be run on one node...
+// TODO: This should only be run on one host...
 func (r *RDPG) InitSchema() (err error) {
 	// TODO: if 'rdpg' database DNE,
-	// For each node connect to pgbdr and:
+	// For each host connect to pgbdr and:
 	//   CreatDatabase('rdpg','postgres')
 	//   "ALTER USER postgres SUPERUSER CREATEDB CREATEROLE INHERIT"
 	//   CreateReplicationGroup('rdpg')
@@ -41,13 +41,14 @@ func (r *RDPG) InitSchema() (err error) {
 	}
 
 	keys = []string{
-		"create_table_cfsb_services",
-		"create_table_cfsb_plans",
-		"create_table_cfsb_instances",
-		"create_table_cfsb_bindings",
-		"create_table_cfsb_credentials",
+		"create_table_cfsbapi_services",
+		"create_table_cfsbapi_plans",
+		"create_table_cfsbapi_instances",
+		"create_table_cfsbapi_bindings",
+		"create_table_cfsbapi_credentials",
 		"create_table_rdpg_consul_watch_notifications",
 		"create_table_rdpg_events",
+		"create_table_rdpg_schedules",
 	}
 	for _, key := range keys {
 		k := strings.Split(strings.Replace(strings.Replace(key, "create_table_", "", 1), "_", ".", 1), ".")
@@ -69,10 +70,10 @@ func (r *RDPG) InitSchema() (err error) {
 	}
 
 	// TODO: Move initial population of services out of rdpg-agent to Admin API.
-	if err := db.QueryRow("SELECT name FROM cfsb.services WHERE name='rdpg' LIMIT 1;").Scan(&name); err != nil {
+	if err := db.QueryRow("SELECT name FROM cfsbapi.services WHERE name='rdpg' LIMIT 1;").Scan(&name); err != nil {
 		if err == sql.ErrNoRows {
-			if _, err = db.Exec(SQL["insert_default_cfsb_services"]); err != nil {
-				log.Error(fmt.Sprintf("rdpg.initSchema(insert_default_cfsb_services) %s", err))
+			if _, err = db.Exec(SQL["insert_default_cfsbapi_services"]); err != nil {
+				log.Error(fmt.Sprintf("rdpg.initSchema(insert_default_cfsbapi_services) %s", err))
 				return err
 			}
 		} else {
@@ -82,10 +83,10 @@ func (r *RDPG) InitSchema() (err error) {
 	}
 
 	// TODO: Move initial population of services out of rdpg-agent to Admin API.
-	if err = db.QueryRow("SELECT name FROM cfsb.plans WHERE name='shared' LIMIT 1;").Scan(&name); err != nil {
+	if err = db.QueryRow("SELECT name FROM cfsbapi.plans WHERE name='shared' LIMIT 1;").Scan(&name); err != nil {
 		if err == sql.ErrNoRows {
-			if _, err = db.Exec(SQL["insert_default_cfsb_plans"]); err != nil {
-				log.Error(fmt.Sprintf("rdpg.initSchema(insert_default_cfsb_plans) %s", err))
+			if _, err = db.Exec(SQL["insert_default_cfsbapi_plans"]); err != nil {
+				log.Error(fmt.Sprintf("rdpg.initSchema(insert_default_cfsbapi_plans) %s", err))
 				return err
 			}
 		} else {
@@ -95,11 +96,11 @@ func (r *RDPG) InitSchema() (err error) {
 	}
 	db.Close()
 
-	for _, node := range r.Nodes() {
-		node.Database = "postgres"
-		db, err := node.Connect()
+	for _, host := range r.Hosts() {
+		host.Database = "postgres"
+		db, err := host.Connect()
 		if err != nil {
-			log.Error(fmt.Sprintf("RDPG#DropUser(%s) %s ! %s", name, node.Host, err))
+			log.Error(fmt.Sprintf("RDPG#DropUser(%s) %s ! %s", name, host.Host, err))
 			return err
 		}
 		log.Trace(fmt.Sprintf("RDPG#initSchema() SQL[%s]", "postgres_schemas"))

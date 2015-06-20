@@ -9,7 +9,7 @@ CF_TRACE=true cf create-service-broker rdpg cfadmin cfadmin http://10.244.2.2:88
 ```
 
 In production you will need to make sure that a domain name passes through to 
-this backend port on any of the nodes, first node by default.
+this backend port on any of the hosts, first host by default.
 
 Don't forget to allow access to the newly registered services,
 ```sh

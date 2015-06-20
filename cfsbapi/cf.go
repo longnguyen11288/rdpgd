@@ -1,4 +1,4 @@
-package cfsb
+package cfsbapi
 
 type CF struct {
 	CCTarget  string `yaml:"cc_target"`
@@ -6,4 +6,3 @@ type CF struct {
 	User      string `yaml:"user"`
 	Password  string `yaml:"password"`
 }
-

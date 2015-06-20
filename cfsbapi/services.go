@@ -1,4 +1,4 @@
-package cfsb
+package cfsbapi
 
 type Service struct {
 	Id          string         `db:"id"`

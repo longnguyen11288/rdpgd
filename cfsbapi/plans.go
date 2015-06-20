@@ -1,4 +1,4 @@
-package cfsb
+package cfsbapi
 
 import (
 	"fmt"
@@ -26,10 +26,10 @@ func FindPlan(planId string) (plan *Plan, err error) {
 	r := rdpg.New()
 	r.OpenDB("rdpg")
 	plan = &Plan{}
-	sq := `SELECT id,name,description FROM cfsb.plans WHERE id=$1 LIMIT 1;`
+	sq := `SELECT id,name,description FROM cfsbapi.plans WHERE id=$1 LIMIT 1;`
 	err = r.DB.Get(&plan, sq, planId)
 	if err != nil {
-		log.Error(fmt.Sprintf("cfsb.FindPlan(%s) %s", planId, err))
+		log.Error(fmt.Sprintf("cfsbapi.FindPlan(%s) %s", planId, err))
 	}
 	r.DB.Close()
 	return plan, err

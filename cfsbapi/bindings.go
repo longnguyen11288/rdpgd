@@ -1,4 +1,4 @@
-package cfsb
+package cfsbapi
 
 import (
 	"fmt"
@@ -29,7 +29,7 @@ type Binding struct {
 func CreateBinding(instanceId, bindingId string) (binding *Binding, err error) {
 	instance, err := FindInstance(instanceId)
 	if err != nil {
-		log.Error(fmt.Sprintf(`cfsb.CreateBinding(%s,%s) ! %s`, instanceId, bindingId, err))
+		log.Error(fmt.Sprintf(`cfsbapi.CreateBinding(%s,%s) ! %s`, instanceId, bindingId, err))
 		return
 	}
 	binding = &Binding{BindingId: bindingId, InstanceId: instanceId}
@@ -51,16 +51,16 @@ func CreateBinding(instanceId, bindingId string) (binding *Binding, err error) {
 	r := rdpg.New()
 	r.OpenDB("rdpg")
 
-	sq := `INSERT INTO cfsb.bindings (instance_id,binding_id) VALUES ($1,$2);`
+	sq := `INSERT INTO cfsbapi.bindings (instance_id,binding_id) VALUES ($1,$2);`
 	_, err = r.DB.Query(sq, binding.InstanceId, binding.BindingId)
 	if err != nil {
-		log.Error(fmt.Sprintf(`cfsb.CreateBinding(%s) ! %s`, bindingId, err))
+		log.Error(fmt.Sprintf(`cfsbapi.CreateBinding(%s) ! %s`, bindingId, err))
 	}
 
-	sq = `INSERT INTO cfsb.credentials (instance_id,binding_id,host,port,uname,pass,dbname) VALUES ($1,$2,$3,$4,$5,$6,$7);`
+	sq = `INSERT INTO cfsbapi.credentials (instance_id,binding_id,host,port,uname,pass,dbname) VALUES ($1,$2,$3,$4,$5,$6,$7);`
 	_, err = r.DB.Query(sq, binding.InstanceId, binding.BindingId, binding.Creds.Host, binding.Creds.Port, binding.Creds.UserName, binding.Creds.Password, binding.Creds.Database)
 	if err != nil {
-		log.Error(fmt.Sprintf(`cfsb.CreateBinding(%s) ! %s`, bindingId, err))
+		log.Error(fmt.Sprintf(`cfsbapi.CreateBinding(%s) ! %s`, bindingId, err))
 	}
 
 	r.DB.Close()
@@ -71,16 +71,16 @@ func CreateBinding(instanceId, bindingId string) (binding *Binding, err error) {
 func RemoveBinding(bindingId string) (binding *Binding, err error) {
 	binding, err = FindBinding(bindingId)
 	if err != nil {
-		log.Error(fmt.Sprintf(`cfsb.CreateBinding(%s) ! %s`, bindingId, err))
+		log.Error(fmt.Sprintf(`cfsbapi.CreateBinding(%s) ! %s`, bindingId, err))
 		return
 	}
 	r := rdpg.New()
-	sq := `UPDATE cfsb.bindings SET ineffective_at = CURRENT_TIMESTAMP WHERE binding_id = $1;`
-	log.Trace(fmt.Sprintf(`cfsb.RemoveBinding(%s) > %s`, bindingId, sq))
+	sq := `UPDATE cfsbapi.bindings SET ineffective_at = CURRENT_TIMESTAMP WHERE binding_id = $1;`
+	log.Trace(fmt.Sprintf(`cfsbapi.RemoveBinding(%s) > %s`, bindingId, sq))
 	r.OpenDB("rdpg")
 	_, err = r.DB.Query(sq, bindingId)
 	if err != nil {
-		log.Error(fmt.Sprintf(`cfsb.CreateBinding(%s) ! %s`, bindingId, err))
+		log.Error(fmt.Sprintf(`cfsbapi.CreateBinding(%s) ! %s`, bindingId, err))
 	}
 	r.DB.Close()
 	return
@@ -89,13 +89,13 @@ func RemoveBinding(bindingId string) (binding *Binding, err error) {
 func FindBinding(bindingId string) (binding *Binding, err error) {
 	r := rdpg.New()
 	b := Binding{}
-	sq := `SELECT id,instance_id, binding_id FROM cfsb.bindings WHERE binding_id=lower($1) LIMIT 1;`
-	log.Trace(fmt.Sprintf(`cfsb.FindBinding(%s) > %s`, bindingId, sq))
+	sq := `SELECT id,instance_id, binding_id FROM cfsbapi.bindings WHERE binding_id=lower($1) LIMIT 1;`
+	log.Trace(fmt.Sprintf(`cfsbapi.FindBinding(%s) > %s`, bindingId, sq))
 	r.OpenDB("rdpg")
 	err = r.DB.Get(&b, sq, bindingId)
 	if err != nil {
 		// TODO: Change messaging if err is sql.NoRows then say couldn't find binding with bindingId
-		log.Error(fmt.Sprintf("cfsb.FindBinding(%s) ! %s", bindingId, err))
+		log.Error(fmt.Sprintf("cfsbapi.FindBinding(%s) ! %s", bindingId, err))
 	}
 	r.DB.Close()
 	binding = &b

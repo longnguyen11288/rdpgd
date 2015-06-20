@@ -1,4 +1,4 @@
-package cfsb
+package cfsbapi
 
 import (
 	"errors"
@@ -56,15 +56,31 @@ func NewInstance(instanceId, serviceId, planId, organizationId, spaceId string) 
 	return
 }
 
+func ActiveInstances() (is []Instance, err error) {
+	r := rdpg.New()
+	sq := ` SELECT id, instance_id, service_id, plan_id, organization_id, space_id, dbname, uname, pass 
+	FROM cfsbapi.instances 
+	WHERE effective_at IS NOT NULL AND decommissioned_at IS NULL
+	LIMIT 1; `
+	r.OpenDB("rdpg")
+	err = r.DB.Select(&is, sq)
+	if err != nil {
+		// TODO: Change messaging if err is sql.NoRows then say couldn't find instance with instanceId
+		log.Error(fmt.Sprintf("cfsbapi.ActiveInstances() ! %s", err))
+	}
+	r.DB.Close()
+	return
+}
+
 func FindInstance(instanceId string) (i *Instance, err error) {
 	r := rdpg.New()
 	in := Instance{}
-	sq := `SELECT id, instance_id, service_id, plan_id, organization_id, space_id, dbname, uname, pass FROM cfsb.instances WHERE instance_id=lower($1) LIMIT 1;`
+	sq := `SELECT id, instance_id, service_id, plan_id, organization_id, space_id, dbname, uname, pass FROM cfsbapi.instances WHERE instance_id=lower($1) LIMIT 1;`
 	r.OpenDB("rdpg")
 	err = r.DB.Get(&in, sq, instanceId)
 	if err != nil {
 		// TODO: Change messaging if err is sql.NoRows then say couldn't find instance with instanceId
-		log.Error(fmt.Sprintf("cfsb.FindInstance(%s) ! %s", instanceId, err))
+		log.Error(fmt.Sprintf("cfsbapi.FindInstance(%s) ! %s", instanceId, err))
 	}
 	r.DB.Close()
 	i = &in
@@ -95,7 +111,7 @@ func (i *Instance) Provision() (err error) {
 	}
 
 	r.OpenDB("rdpg")
-	sq := `INSERT INTO cfsb.instances 
+	sq := `INSERT INTO cfsbapi.instances 
 (instance_id, service_id, plan_id, organization_id, space_id, dbname, uname, pass)
 VALUES ($1,$2,$3,$4,$5,$6,$7,$8);
 `
@@ -104,11 +120,11 @@ VALUES ($1,$2,$3,$4,$5,$6,$7,$8);
 		log.Error(fmt.Sprintf(`Instance#Provision(%s) ! %s`, i.InstanceId, err))
 	}
 
-	nodes := r.Nodes()
-	for _, node := range nodes {
-		err := node.AdminAPI("PUT", "services/pgbouncer/configure")
+	hosts := r.Hosts()
+	for _, host := range hosts {
+		err := host.AdminAPI("PUT", "services/pgbouncer/configure")
 		if err != nil {
-			log.Error(fmt.Sprintf(`Instance#Provision(%s) %s ! %s`, i.InstanceId, node.Host, err))
+			log.Error(fmt.Sprintf(`Instance#Provision(%s) %s ! %s`, i.InstanceId, host.Host, err))
 		}
 	}
 	r.DB.Close()
@@ -118,17 +134,17 @@ VALUES ($1,$2,$3,$4,$5,$6,$7,$8);
 func (i *Instance) Remove() (err error) {
 	r := rdpg.New()
 	r.OpenDB("rdpg")
-	_, err = r.DB.Exec(`UPDATE cfsb.instances SET ineffective_at = CURRENT_TIMESTAMP WHERE id=$1`, i.Id)
+	_, err = r.DB.Exec(`UPDATE cfsbapi.instances SET ineffective_at = CURRENT_TIMESTAMP WHERE id=$1`, i.Id)
 	if err != nil {
 		log.Error(fmt.Sprintf("Instance#Remove(%s) ! %s", i.InstanceId, err))
 	}
 
-	time.Sleep(1) // Wait for the update to propigate to the other nodes.
+	time.Sleep(1) // Wait for the update to propigate to the other hosts.
 
-	for _, node := range r.Nodes() {
-		err := node.AdminAPI("PUT", "services/pgbouncer/configure")
+	for _, host := range r.Hosts() {
+		err := host.AdminAPI("PUT", "services/pgbouncer/configure")
 		if err != nil {
-			log.Error(fmt.Sprintf(`Instance#Provision(%s) %s ! %s`, i.InstanceId, node.Host, err))
+			log.Error(fmt.Sprintf(`Instance#Provision(%s) %s ! %s`, i.InstanceId, host.Host, err))
 		}
 	}
 	r.DB.Close()
@@ -138,9 +154,9 @@ func (i *Instance) Remove() (err error) {
 func (i *Instance) ExternalDNS() (dns string) {
 	// TODO: Figure out where we'll store and retrieve the external DNS information
 	r := rdpg.New()
-	nodes := r.Nodes()
+	hosts := r.Hosts()
 	// TODO: Import the external DNS host via env variable configuration.
-	return nodes[0].Host + ":5432"
+	return hosts[0].Host + ":5432"
 }
 
 func (i *Instance) URI() (uri string) {
@@ -170,11 +186,11 @@ func Instances() (si []Instance, err error) {
 	r.OpenDB("rdpg")
 	si = []Instance{}
 	// TODO: Move this into a versioned SQL Function.
-	sq := `SELECT instance_id, service_id, plan_id, organization_id, space_id, dbname, uname, 'md5'||md5(cfsb.instances.pass||uname) as pass FROM cfsb.instances WHERE ineffective_at IS NULL; `
+	sq := `SELECT instance_id, service_id, plan_id, organization_id, space_id, dbname, uname, 'md5'||md5(cfsbapi.instances.pass||uname) as pass FROM cfsbapi.instances WHERE ineffective_at IS NULL; `
 	err = r.DB.Select(&si, sq)
 	if err != nil {
 		// TODO: Change messaging if err is sql.NoRows then say couldn't find instance with instanceId
-		log.Error(fmt.Sprintf("cfsb.Instances() ! %s", err))
+		log.Error(fmt.Sprintf("cfsbapi.Instances() ! %s", err))
 	}
 	r.DB.Close()
 	return

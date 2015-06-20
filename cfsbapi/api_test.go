@@ -1,4 +1,4 @@
-package cfsb
+package cfsbapi
 
 import (
 	"net/http"

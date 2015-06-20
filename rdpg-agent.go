@@ -8,10 +8,11 @@ import (
 	"strconv"
 	"syscall"
 
-	"github.com/wayneeseguin/rdpg-agent/admin"
-	"github.com/wayneeseguin/rdpg-agent/cfsb"
+	"github.com/wayneeseguin/rdpg-agent/adminapi"
+	"github.com/wayneeseguin/rdpg-agent/cfsbapi"
 	"github.com/wayneeseguin/rdpg-agent/log"
 	"github.com/wayneeseguin/rdpg-agent/rdpg"
+	"github.com/wayneeseguin/rdpg-agent/scheduler"
 	"github.com/wayneeseguin/rdpg-agent/workers"
 )
 
@@ -61,11 +62,13 @@ func main() {
 		proc.Signal(syscall.SIGTERM)
 	}
 
-	go cfsb.API()
+	go cfsbapi.Listen()
 
-	go admin.API()
+	go scheduler.Schedule()
 
-	workers.Run()
+	go workers.Work()
+
+	adminapi.Listen()
 }
 
 func ParseArgs() {

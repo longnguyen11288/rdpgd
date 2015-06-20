@@ -1,4 +1,4 @@
-package admin
+package adminapi
 
 import (
 	"encoding/base64"
@@ -33,7 +33,7 @@ func init() {
 	}
 }
 
-func API() {
+func Listen() {
 	AdminMux := http.NewServeMux()
 	router := mux.NewRouter()
 	router.HandleFunc("/health/{check}", httpAuth(HealthHandler))

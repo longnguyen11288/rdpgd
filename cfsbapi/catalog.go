@@ -1,9 +1,7 @@
-package cfsb
+package cfsbapi
 
 import (
 	"fmt"
-
-	//. "github.com/smartystreets/goconvey/convey"
 
 	"github.com/wayneeseguin/rdpg-agent/log"
 	"github.com/wayneeseguin/rdpg-agent/rdpg"
@@ -22,16 +20,16 @@ func (c *Catalog) Fetch() (err error) {
 	}
 	db := r.DB
 
-	err = db.Select(&c.Services, `SELECT service_id,name,description,bindable FROM cfsb.services;`)
+	err = db.Select(&c.Services, `SELECT service_id,name,description,bindable FROM cfsbapi.services;`)
 	if err != nil {
-		log.Error(fmt.Sprintf("Catalog#Fetch() selecting from cfsb.services %s", err.Error()))
+		log.Error(fmt.Sprintf("Catalog#Fetch() selecting from cfsbapi.services %s", err.Error()))
 		return
 	}
 
 	// TODO: Account for plans being associated with a service.
 	for i, _ := range c.Services {
 		service := &c.Services[i]
-		err = db.Select(&service.Plans, `SELECT plan_id,name,description FROM cfsb.plans;`)
+		err = db.Select(&service.Plans, `SELECT plan_id,name,description FROM cfsbapi.plans;`)
 		if err != nil {
 			log.Error(fmt.Sprintf("Catalog#Fetch() Service Plans %s", err.Error()))
 			return
