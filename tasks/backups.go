@@ -1,4 +1,4 @@
-package workers
+package tasks
 
 func BackupDatabase(data string) (err error) {
 	// Be sure to keep audit history in the rdpg database backups & audit schema.

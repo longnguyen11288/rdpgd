@@ -7,9 +7,9 @@ import (
 	"os/exec"
 	"strings"
 
-	"github.com/wayneeseguin/rdpg-agent/cfsbapi"
-	"github.com/wayneeseguin/rdpg-agent/log"
-	"github.com/wayneeseguin/rdpg-agent/rdpg"
+	"github.com/wayneeseguin/rdpgd/cfsbapi"
+	"github.com/wayneeseguin/rdpgd/log"
+	"github.com/wayneeseguin/rdpgd/rdpg"
 )
 
 type Service struct {
@@ -32,7 +32,7 @@ func (s *Service) Configure() (err error) {
 	case "consul":
 		return errors.New(`Service#Configure("consul") is not yet implemented`)
 	case "haproxy":
-		header, err := ioutil.ReadFile(`/var/vcap/jobs/rdpg-agent/config/haproxy/haproxy.cfg.header`)
+		header, err := ioutil.ReadFile(`/var/vcap/jobs/rdpg/config/haproxy/haproxy.cfg.header`)
 		if err != nil {
 			log.Error(fmt.Sprintf("cfsbapi#Service.Configure(%s) ! %s", s.Name, err))
 			return err
@@ -51,7 +51,7 @@ bind 0.0.0.0:5432
 backend pgbdr_write_master
   mode tcp
 	server master %s:6432 check
-	`, hosts[0].Host)
+	`, hosts[0].IP)
 
 		hc := []string{string(header), footer}
 		err = ioutil.WriteFile(`/var/vcap/jobs/haproxy/config/haproxy.cfg`, []byte(strings.Join(hc, "\n")), 0640)
@@ -75,13 +75,13 @@ backend pgbdr_write_master
 			return err
 		}
 
-		pgbConf, err := ioutil.ReadFile(`/var/vcap/jobs/rdpg-agent/config/pgbouncer/pgbouncer.ini`)
+		pgbConf, err := ioutil.ReadFile(`/var/vcap/jobs/rdpg/config/pgbouncer/pgbouncer.ini`)
 		if err != nil {
 			log.Error(fmt.Sprintf("cfsbapi#Service.Configure(%s) ! %s", s.Name, err))
 			return err
 		}
 
-		pgbUsers, err := ioutil.ReadFile(`/var/vcap/jobs/rdpg-agent/config/pgbouncer/users`)
+		pgbUsers, err := ioutil.ReadFile(`/var/vcap/jobs/rdpg/config/pgbouncer/users`)
 		if err != nil {
 			log.Error(fmt.Sprintf("cfsbapi#Service.Configure(%s) ! %s", s.Name, err))
 			return err

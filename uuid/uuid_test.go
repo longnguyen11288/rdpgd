@@ -1,4 +1,4 @@
-package rdpg
+package uuid
 
 import "testing"
 

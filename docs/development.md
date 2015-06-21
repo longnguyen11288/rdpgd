@@ -36,9 +36,9 @@ Folow the installation instructions on the project website.
 [GoConvey](http://goconvey.co) is used for testing, follow the installation 
 instructions on the website.
 
-## Running rdpg-agent
+## Running rdpg
 
-Configuration of `rdpg-agent` is done via environment variables passed into the running process,
+Configuration of `rdpg` is done via environment variables passed into the running process,
 
 ```sh
 export \
@@ -47,7 +47,7 @@ export \
   RDPG_SB_USER=cf \
   RDPG_SB_PASS=cf \
   RDPG_ADMIN_PORT=58888 \
-  RDPG_ADMIN_PG_URI="postgresql://postgres:admin@127.0.0.1:55432/rdpg?sslmode=disable&connect_timeout=5&fallback_application_name=rdpg-agent" 
+  RDPG_ADMIN_PG_URI="postgresql://postgres:admin@127.0.0.1:55432/rdpg?sslmode=disable&connect_timeout=5&fallback_application_name=rdpg" 
 ```
 
 When running the agent locally, you will need to first deploy the 
@@ -60,7 +60,7 @@ ssh  -L 55432:127.0.0.1:5432 vcap@10.244.2.2 # BOSH Lite Password: c1oudc0w
 To run the agent during development,
 
 ```sh
-go run rdpg-agent.go
+go run rdpg.go
 ```
 
 To see what is in the rdpg database once the ssh port forwarding is setup, 
@@ -83,47 +83,47 @@ select * from plans;
 
 To create the above tunnel,
 ```sh
-./rdpg-agent-dev tunnel
+./rdpgd-dev tunnel
 ```
 
 To go run the main go,
 ```sh
-./rdpg-agent-dev run
+./rdpgd-dev run
 ```
 
 To run the tests,
 ```sh
-./rdpg-agent-dev test
+./rdpgd-dev test
 ```
 
 To run the tests constantly using goconvey,
 ```sh
-./rdpg-agent-dev convey
+./rdpgd-dev convey
 ```
 
 To run get catalog API,
 ```sh
-./rdpg-agent-dev catalog
+./rdpgd-dev catalog
 ```
 
 To run provision instance API,
 ```sh
-./rdpg-agent-dev provision
+./rdpgd-dev provision
 ```
 
 To run bind instance API, using the instance UUID generated during provision,
 ```sh
-./rdpg-agent-dev bind ${instanceId}
+./rdpgd-dev bind ${instanceId}
 ```
 
 To run unbind instance API, using the instance UUID generated during provision,
 ```sh
-./rdpg-agent-dev unbind ${instanceId}
+./rdpgd-dev unbind ${instanceId}
 ```
 
 To run deprovision instance API, using the instance UUID generated during provision,
 ```sh
-./rdpg-agent-dev deprovision ${instanceId}
+./rdpgd-dev deprovision ${instanceId}
 ```
 
 # Testing

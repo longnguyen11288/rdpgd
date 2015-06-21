@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/wayneeseguin/rdpg-agent/log"
-	"github.com/wayneeseguin/rdpg-agent/rdpg"
+	"github.com/wayneeseguin/rdpgd/log"
+	"github.com/wayneeseguin/rdpgd/rdpg"
 )
 
 type Credentials struct {
@@ -57,7 +57,7 @@ func CreateBinding(instanceId, bindingId string) (binding *Binding, err error) {
 		log.Error(fmt.Sprintf(`cfsbapi.CreateBinding(%s) ! %s`, bindingId, err))
 	}
 
-	sq = `INSERT INTO cfsbapi.credentials (instance_id,binding_id,host,port,uname,pass,dbname) VALUES ($1,$2,$3,$4,$5,$6,$7);`
+	sq = `INSERT INTO cfsbapi.credentials (instance_id,binding_id,host,port,dbuser,dbpass,dbname) VALUES ($1,$2,$3,$4,$5,$6,$7);`
 	_, err = r.DB.Query(sq, binding.InstanceId, binding.BindingId, binding.Creds.Host, binding.Creds.Port, binding.Creds.UserName, binding.Creds.Password, binding.Creds.Database)
 	if err != nil {
 		log.Error(fmt.Sprintf(`cfsbapi.CreateBinding(%s) ! %s`, bindingId, err))
@@ -74,7 +74,7 @@ func RemoveBinding(bindingId string) (binding *Binding, err error) {
 		log.Error(fmt.Sprintf(`cfsbapi.CreateBinding(%s) ! %s`, bindingId, err))
 		return
 	}
-	r := rdpg.NewRDPG()
+	r := rdpg.New()
 	sq := `UPDATE cfsbapi.bindings SET ineffective_at = CURRENT_TIMESTAMP WHERE binding_id = $1;`
 	log.Trace(fmt.Sprintf(`cfsbapi.RemoveBinding(%s) > %s`, bindingId, sq))
 	r.OpenDB("rdpg")
@@ -87,7 +87,7 @@ func RemoveBinding(bindingId string) (binding *Binding, err error) {
 }
 
 func FindBinding(bindingId string) (binding *Binding, err error) {
-	r := rdpg.NewRDPG()
+	r := rdpg.New()
 	b := Binding{}
 	sq := `SELECT id,instance_id, binding_id FROM cfsbapi.bindings WHERE binding_id=lower($1) LIMIT 1;`
 	log.Trace(fmt.Sprintf(`cfsbapi.FindBinding(%s) > %s`, bindingId, sq))

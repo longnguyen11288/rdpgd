@@ -1,12 +1,12 @@
-package workers
+package tasks
 
 import (
 	"fmt"
 	"time"
 
-	"github.com/wayneeseguin/rdpg-agent/log"
-	"github.com/wayneeseguin/rdpg-agent/rdpg"
-	"github.com/wayneeseguin/rdpg-agent/tasks"
+	"github.com/wayneeseguin/rdpgd/log"
+	"github.com/wayneeseguin/rdpgd/rdpg"
+	"github.com/wayneeseguin/rdpgd/tasks"
 )
 
 func Work() {
@@ -20,7 +20,7 @@ func Work() {
 		// TODO: only work for my role type: write vs read
 		// eg. WHERE role = 'read'
 		task := tasks.Task{}
-		sq := `SELECT task_id,func,data,ttl FROM work.tasks WHERE processed_at IS NULL AND locked_by IS NULL ORDER BY created_at DESC LIMIT 1;`
+		sq := `SELECT task_id,func,data,ttl FROM tasks.tasks WHERE processed_at IS NULL AND locked_by IS NULL ORDER BY created_at DESC LIMIT 1;`
 		err = r.DB.Select(&task, sq)
 		if err != nil {
 			log.Error(fmt.Sprintf(`worker.Run() Selecting Tasks ! %s`, err))
@@ -48,7 +48,7 @@ func Work() {
 		if err != nil {
 			log.Error(fmt.Sprintf(`worker.Work() Task %+v ! %s`, task, err))
 		} else {
-			sq := fmt.Sprintf(`UPDATE work.tasks SET processed_at=CURRENT_TIMESTAMP WHERE task_id='%s';`, task.TaskId)
+			sq := fmt.Sprintf(`UPDATE tasks.tasks SET processed_at=CURRENT_TIMESTAMP WHERE task_id='%s';`, task.TaskId)
 			_, err = r.DB.Exec(sq)
 			if err != nil {
 				log.Error(fmt.Sprintf(`tasks.Work() Error setting processed_at for task %s ! %s`, t.TaskId, err))

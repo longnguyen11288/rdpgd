@@ -7,7 +7,7 @@ import (
 	"database/sql"
 
 	_ "github.com/lib/pq"
-	"github.com/wayneeseguin/rdpg-agent/log"
+	"github.com/wayneeseguin/rdpgd/log"
 )
 
 // TODO: This should only be run on one host...
@@ -69,7 +69,7 @@ func (r *RDPG) InitSchema() (err error) {
 		}
 	}
 
-	// TODO: Move initial population of services out of rdpg-agent to Admin API.
+	// TODO: Move initial population of services out of rdpg to Admin API.
 	if err := db.QueryRow("SELECT name FROM cfsbapi.services WHERE name='rdpg' LIMIT 1;").Scan(&name); err != nil {
 		if err == sql.ErrNoRows {
 			if _, err = db.Exec(SQL["insert_default_cfsbapi_services"]); err != nil {
@@ -82,7 +82,7 @@ func (r *RDPG) InitSchema() (err error) {
 		}
 	}
 
-	// TODO: Move initial population of services out of rdpg-agent to Admin API.
+	// TODO: Move initial population of services out of rdpg to Admin API.
 	if err = db.QueryRow("SELECT name FROM cfsbapi.plans WHERE name='shared' LIMIT 1;").Scan(&name); err != nil {
 		if err == sql.ErrNoRows {
 			if _, err = db.Exec(SQL["insert_default_cfsbapi_plans"]); err != nil {
@@ -100,7 +100,7 @@ func (r *RDPG) InitSchema() (err error) {
 		host.Database = "postgres"
 		db, err := host.Connect()
 		if err != nil {
-			log.Error(fmt.Sprintf("RDPG#DropUser(%s) %s ! %s", name, host.Host, err))
+			log.Error(fmt.Sprintf("RDPG#DropUser(%s) %s ! %s", name, host.IP, err))
 			return err
 		}
 		log.Trace(fmt.Sprintf("RDPG#initSchema() SQL[%s]", "postgres_schemas"))

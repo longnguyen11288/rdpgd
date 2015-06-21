@@ -10,7 +10,7 @@ import (
 	"strings"
 
 	"github.com/gorilla/mux"
-	"github.com/wayneeseguin/rdpg-agent/log"
+	"github.com/wayneeseguin/rdpgd/log"
 )
 
 var (
@@ -151,7 +151,7 @@ func InstanceHandler(w http.ResponseWriter, request *http.Request) {
 			return
 		}
 
-		instance, err := NewInstance(
+		instance, err := NewServiceInstance(
 			vars["instance_id"],
 			ir.ServiceId,
 			ir.Plan,

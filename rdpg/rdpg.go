@@ -1,14 +1,15 @@
 package rdpg
 
 import (
+	"bytes"
 	"fmt"
+	"net/http"
 	"net/url"
 	"os"
-	"strings"
 	"syscall"
 
 	"github.com/jmoiron/sqlx"
-	"github.com/wayneeseguin/rdpg-agent/log"
+	"github.com/wayneeseguin/rdpgd/log"
 )
 
 var (
@@ -21,6 +22,7 @@ type RDPG struct {
 }
 
 func init() {
+	// Question: should we not bother trying to connect until first use???
 	rdpgURI = os.Getenv("RDPG_ADMIN_PG_URI")
 	if rdpgURI == "" || rdpgURI[0:13] != "postgresql://" {
 		log.Error("ERROR: RDPG_ADMIN_PG_URI is not set.")
@@ -34,6 +36,7 @@ func init() {
 		proc, _ := os.FindProcess(os.Getpid())
 		proc.Signal(syscall.SIGTERM)
 	}
+
 	err = db.Ping()
 	if err != nil {
 		db.Close()
@@ -46,24 +49,20 @@ func init() {
 
 // TODO: RDPG Struct => RDPG Struct, allowing for multiple instances of RDPG
 // TODO: Add concept of 'target' RDPG Cluster instead of assuming local.
-func NewRDPG(uri string) *RDPG {
-	if uri == "" || uri[0:13] != "postgresql://" {
-		log.Error(fmt.Sprintf("rdpg.NewRDPG() uri malformed ! %s", uri))
-		return nil
-	}
-	if uri != "" {
-		return &RDPG{URI: uri}
-	} else {
-		return &RDPG{URI: rdpgURI}
-	}
+func NewRDPG() (r *RDPG) {
+	r = &RDPG{URI: rdpgURI}
+	return
 }
 
-func (r *RDPG) connect() (db *sqlx.DB, err error) {
-	db, err = sqlx.Connect("postgres", r.URI)
-	if err != nil {
-		log.Error(fmt.Sprintf("rdpg.Host#Connect() %s ! %s", r.URI, err))
+func (r *RDPG) SetURI(uri string) (err error) {
+	if uri == "" || uri[0:13] != "postgresql://" {
+		// TODO: use uri.Parse to further validate URI.
+		err = fmt.Errorf(`Malformed postgresql:// URI`, uri)
+		log.Error(fmt.Sprintf("rdpg.NewRDPG() uri malformed ! %s", err))
+		return
 	}
-	return db, err
+	r.URI = uri
+	return
 }
 
 // TODO: Instead pass back *sql.DB
@@ -97,42 +96,27 @@ func (r *RDPG) OpenDB(dbname string) error {
 	return nil
 }
 
-func (r *RDPG) Hosts() (hosts []Host) {
-	db, err := r.connect()
+func (r *RDPG) connect() (db *sqlx.DB, err error) {
+	db, err = sqlx.Connect("postgres", r.URI)
 	if err != nil {
-		log.Error(fmt.Sprintf("RDPG#Hosts() ! %s", err))
+		log.Error(fmt.Sprintf("rdpg#connect() %s ! %s", r.URI, err))
 	}
+	return db, err
+}
 
-	// TODO: Populate list of rdpg hosts for given URL,
-	//`SELECT node_local_dsn FROM bdr.bdr_nodes INTO rdpg.hosts (node_local_dsn);`
+// Call RDPG Admin API for given IP
+func CallAdminAPI(ip, method, path string) (err error) {
+	url := fmt.Sprintf("http://%s:%s/%s", ip, os.Getenv("RDPG_ADMIN_PORT"), path)
+	req, err := http.NewRequest(method, url, bytes.NewBuffer([]byte(`{}`)))
+	// req.Header.Set("Content-Type", "application/json")
+	req.SetBasicAuth(os.Getenv("RDPG_ADMIN_USER"), os.Getenv("RDPG_ADMIN_PASS"))
+	client := &http.Client{}
 
-	type dsn struct {
-		DSN string `db:"node_local_dsn"`
-	}
-
-	dsns := []dsn{}
-	err = db.Select(&dsns, SQL["bdr_nodes_dsn"])
+	log.Trace(fmt.Sprintf(`pg.Host<%s>#AdminAPI(%s,%s) %s`, ip, method, path, url))
+	resp, err := client.Do(req)
 	if err != nil {
-		log.Error(fmt.Sprintf("RDPG#Hosts() %s ! %s", SQL["bdr_nodes"], err))
+		log.Error(fmt.Sprintf(`pg.Host<%s>#AdminAPI(%s,%s) ! %s`, ip, method, url, err))
 	}
-
-	for _, t := range dsns {
-		host := Host{}
-		s := strings.Split(t.DSN, " ")
-		host.LocalDSN = t.DSN
-		host.Host = strings.Split(s[0], "=")[1]
-		host.Port = strings.Split(s[1], "=")[1]
-		host.User = strings.Split(s[2], "=")[1]
-		host.Database = `postgres` // strings.Split(s[3], "=")[1]
-		hosts = append(hosts, host)
-	}
-	// TODO: Get this information into the database and then out of the rdpg.hosts
-	//rows, err := db.Query("SELECT host,port,user,'postgres' FROM rdpg.hosts;")
-	//if err != nil {
-	//	log.Error(fmt.Sprintf("Hosts() %s", err))
-	//} else {
-	//	sqlx.StructScan(rows, hosts)
-	//}
-	db.Close()
-	return hosts
+	resp.Body.Close()
+	return
 }

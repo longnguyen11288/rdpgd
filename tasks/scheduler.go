@@ -1,14 +1,13 @@
-package scheduler
+package tasks
 
 import (
 	"fmt"
 	"time"
 
-	"code.google.com/p/go-uuid/uuid"
-
 	consulapi "github.com/hashicorp/consul/api"
-	"github.com/wayneeseguin/rdpg-agent/log"
-	"github.com/wayneeseguin/rdpg-agent/rdpg"
+	"github.com/wayneeseguin/rdpgd/log"
+	"github.com/wayneeseguin/rdpgd/rdpg"
+	"github.com/wayneeseguin/rdpgd/uuid"
 )
 
 type Schedule struct {
@@ -26,7 +25,6 @@ var (
 
 /*
 Task Scheduler
-- Consul Lock & Unlock
 - Task TTL: "Task type X should take no more than this long"
 - accounting history stored in database.
 - TTL based cleanup of task Queue for workers that may have imploded.
@@ -39,10 +37,12 @@ Thoughts on scheduler.tasks table:
 	  - look at the "task" and with a giant case statement, puts entries onto the queue
 		- Update the scheduler.tasks table entry "next_start" = "next_start" + duration
 
+Interval + start_at clock time of day
+
 */
 func Scheduler() {
 	for {
-		time.Sleep(10 * time.Second) // Wait 5 seconds before attempting to grab the schedulerLock
+		time.Sleep(10 * time.Second) // Wait before attempting to grab the lock
 
 		err := Lock()
 		if err != nil {
@@ -70,7 +70,6 @@ func Scheduler() {
 		}
 		// TODO: Schedule tasks...
 		// task := NewTask()
-		//
 		Unlock() // Release Consul K/V Lock.
 	}
 }
@@ -81,7 +80,7 @@ func NewSchedule() (s *Schedule) {
 
 func Lock() (err error) {
 	// Acquire consul schedulerLock to aquire right to schedule tasks.
-	key := "rdpg/manager/scheduler/leader"
+	key := "rdpg/tasks/scheduler"
 	client, _ := consulapi.NewClient(consulapi.DefaultConfig())
 	schedulerLock, err := client.LockKey(key)
 	if err != nil {

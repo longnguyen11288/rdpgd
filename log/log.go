@@ -54,10 +54,10 @@ func log(lvl, msg string) {
 	if level <= c {
 		ts := time.Now().Format(time.RFC3339)
 		if c < 50 { // Log stderr messages direct and immediately
-			fmt.Fprintf(os.Stderr, "%s rdpg-agent %s %s\n", ts, lvl, msg)
+			fmt.Fprintf(os.Stderr, "%s rdpg %s %s\n", ts, lvl, msg)
 		} else {
 			// TODO: background worker for stdout messages via channel async
-			fmt.Fprintf(os.Stdout, "%s rdpg-agent %s %s\n", ts, lvl, msg)
+			fmt.Fprintf(os.Stdout, "%s rdpg %s %s\n", ts, lvl, msg)
 		}
 	}
 }

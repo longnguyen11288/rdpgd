@@ -3,11 +3,10 @@ package tasks
 import (
 	"fmt"
 
-	"code.google.com/p/go-uuid/uuid"
-
 	consulapi "github.com/hashicorp/consul/api"
-	"github.com/wayneeseguin/rdpg-agent/log"
-	"github.com/wayneeseguin/rdpg-agent/rdpg"
+	"github.com/wayneeseguin/rdpgd/log"
+	"github.com/wayneeseguin/rdpgd/rdpg"
+	"github.com/wayneeseguin/rdpgd/uuid"
 )
 
 type Task struct {
@@ -62,7 +61,7 @@ func (t *Task) Enqueue() (err error) {
 	if err != nil {
 		log.Error(fmt.Sprintf(`tasks.Enqueue() Opening rdpg database ! %s`, err))
 	}
-	sq := fmt.Sprintf(`INSERT INTO work.tasks(task_id,action,data,ttl) VALUES ('%s','%s','%s','%s');`, t.TaskId, t.Action, t.Data, t.TTL)
+	sq := fmt.Sprintf(`INSERT INTO tasks.tasks(task_id,action,data,ttl) VALUES ('%s','%s','%s','%s');`, t.TaskId, t.Action, t.Data, t.TTL)
 	_, err = r.DB.Exec(sq)
 	if err != nil {
 		log.Error(fmt.Sprintf(`tasks.Enqueue() Insert Task %+v ! %s`, t, err))
@@ -85,7 +84,7 @@ func (t *Task) Dequeue() (err error) {
 		return
 	}
 
-	sq := fmt.Sprintf(`SELECT task_id,action,data,ttl FROM work.tasks WHERE task_id = '%s' LIMIT 1;`, t.TaskId)
+	sq := fmt.Sprintf(`SELECT task_id,action,data,ttl FROM tasks.tasks WHERE task_id = '%s' LIMIT 1;`, t.TaskId)
 	err = r.DB.Select(&t, sq)
 	if err != nil {
 		t.Unlock()
@@ -94,7 +93,7 @@ func (t *Task) Dequeue() (err error) {
 	}
 
 	// TODO: locked_by...
-	sq = fmt.Sprintf(`UPDATE work.tasks SET processing_at=CURRENT_TIMESTAMP WHERE task_id = '%s';`, t.TaskId)
+	sq = fmt.Sprintf(`UPDATE tasks.tasks SET processing_at=CURRENT_TIMESTAMP WHERE task_id = '%s';`, t.TaskId)
 	err = r.DB.Select(&t, sq)
 	if err != nil {
 		t.Unlock()

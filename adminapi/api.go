@@ -8,7 +8,7 @@ import (
 	"strings"
 
 	"github.com/gorilla/mux"
-	"github.com/wayneeseguin/rdpg-agent/log"
+	"github.com/wayneeseguin/rdpgd/log"
 )
 
 var (

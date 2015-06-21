@@ -1,9 +1,9 @@
 # RDPG Agent w/ Cloud Foundry
 
-`rdpg-agent` is configured to listen on port 8888 by default (configurable) with
+`rdpg` is configured to listen on port 8888 by default (configurable) with
 an http API listener that allows for [Cloud Foundry Service Broker]() functionality.
 
-In development `rdpg-agent` can be registered with CF via,
+In development `rdpg` can be registered with CF via,
 ```sh
 CF_TRACE=true cf create-service-broker rdpg cfadmin cfadmin http://10.244.2.2:8888
 ```

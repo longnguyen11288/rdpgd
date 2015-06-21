@@ -3,8 +3,8 @@ package cfsbapi
 import (
 	"fmt"
 
-	"github.com/wayneeseguin/rdpg-agent/log"
-	"github.com/wayneeseguin/rdpg-agent/rdpg"
+	"github.com/wayneeseguin/rdpgd/log"
+	"github.com/wayneeseguin/rdpgd/rdpg"
 )
 
 type Catalog struct {

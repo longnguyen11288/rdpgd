@@ -6,7 +6,7 @@ dev_release() {
   go get -u github.com/laher/goxc
   go get -u github.com/aktau/github-release
   $GOPATH/bin/goxc -pv ${version}
-  echo "Release Archive Generated: .releases/${version}/rdpg-agent_${version}_linux_amd64.tar.gz"
+  echo "Release Archive Generated: .releases/${version}/rdpgd_${version}_linux_amd64.tar.gz"
 }
 
 final_release() {
@@ -20,7 +20,7 @@ final_release() {
   go get -u github.com/aktau/github-release
 
   $GOPATH/bin/goxc -pv ${version}
-  releaseMsg="RDPG Agent Release ${version}"
+  releaseMsg="RDPG Daemon (rdpgd) Release ${version}"
   git tag -a ${version} -m "${releaseMsg}"
   for remote in $(git remote)
   do git push ${remote} --tags || true
@@ -28,17 +28,17 @@ final_release() {
 
   $GOPATH/bin/github-release release \
     --user wayneeseguin \
-    --repo rdpg-agent \
+    --repo rdpgd \
     --tag ${version} \
-    --name "RDPG Agent Release ${version}" \
+    --name "RDPG Daemon (rdpgd) Release ${version}" \
     --description "RDPG Agent to run with the RDPG BOSH Release: https://github.com/wayneeseguin/rdpg-boshrelease"
 
   $GOPATH/bin/github-release upload \
     --user wayneeseguin \
-    --repo rdpg-agent \
+    --repo rdpgd \
     --tag ${version} \
-    --name "rdpg-agent_${version}_linux_amd64.tar.gz" \
-    --file "./.releases/${version}/rdpg-agent_${version}_linux_amd64.tar.gz"
+    --name "rdpgd_${version}_linux_amd64.tar.gz" \
+    --file "./.releases/${version}/rdpgd_${version}_linux_amd64.tar.gz"
 }
 
 get_catalog() {
@@ -53,7 +53,7 @@ export \
   RDPG_SB_USER=cf \
   RDPG_SB_PASS=cf \
   RDPG_ADMIN_PORT=58888 \
-  RDPG_ADMIN_PG_URI="postgresql://postgres:admin@127.0.0.1:55432/rdpg?sslmode=disable&connect_timeout=5&fallback_application_name=rdpg-agent" \
+  RDPG_ADMIN_PG_URI="postgresql://postgres:admin@127.0.0.1:55432/rdpg?sslmode=disable&connect_timeout=5&fallback_application_name=rdpgd" \
   RDPG_SERVICE_DNS="10.244.2.2:8888"
 
 action=$1
@@ -69,7 +69,7 @@ appId="$(uuidgen)"
 
 case ${action} in
   (run)
-    exec go run rdpg-agent.go
+    exec go run rdpgd.go
     ;;
   (tunnel)
     echo "Password when prompted: c1oudc0w"

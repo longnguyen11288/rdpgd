@@ -8,14 +8,11 @@ CREATE SCHEMA IF NOT EXISTS rdpg;
 	`,
 	"rdpg_schemas": `
 CREATE SCHEMA IF NOT EXISTS rdpg;
-CREATE SCHEMA IF NOT EXISTS pgbdr;
 CREATE SCHEMA IF NOT EXISTS cfsbapi;
-CREATE SCHEMA IF NOT EXISTS config;
+CREATE SCHEMA IF NOT EXISTS tasks;
 CREATE SCHEMA IF NOT EXISTS backups;
 CREATE SCHEMA IF NOT EXISTS metrics;
-CREATE SCHEMA IF NOT EXISTS scheduler;
 CREATE SCHEMA IF NOT EXISTS audit;
-CREATE SCHEMA IF NOT EXISTS work;
 `,
 	"rdpg_extensions": `
 CREATE EXTENSION IF NOT EXISTS btree_gist;
@@ -52,14 +49,14 @@ CREATE TABLE IF NOT EXISTS cfsbapi.plans (
 	"create_table_cfsbapi_instances": `
 CREATE TABLE IF NOT EXISTS cfsbapi.instances (
   id                BIGSERIAL PRIMARY KEY NOT NULL,
-  instance_id       TEXT      NOT NULL,
-  service_id        TEXT      NOT NULL,
-  plan_id           TEXT      NOT NULL,
-  organization_id   TEXT      NOT NULL,
-  space_id          TEXT      NOT NULL,
-  dbname            TEXT      NOT NULL,
-  uname             TEXT      NOT NULL,
-  pass              TEXT      NOT NULL,
+  instance_id       TEXT,
+  service_id        TEXT,
+  plan_id           TEXT,
+  organization_id   TEXT,
+  space_id          TEXT,
+  dbname            TEXT NOT NULL,
+  dbuser            TEXT NOT NULL,
+  dbpass            TEXT NOT NULL,
   created_at        TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   effective_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   ineffective_at    TIMESTAMP,
@@ -81,8 +78,8 @@ CREATE TABLE IF NOT EXISTS cfsbapi.credentials (
   binding_id     TEXT      NOT NULL,
   host           TEXT,
   port           TEXT,
-  uname          TEXT,
-  pass           TEXT,
+  dbuser         TEXT,
+  dbpass         TEXT,
   dbname         TEXT,
   created_at     TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   effective_at   TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -105,7 +102,7 @@ CREATE TABLE IF NOT EXISTS rdpg.events (
 	created_at TIMESTAMP DEFAULT NOW()
 );`,
 	"create_table_work_tasks": `
-CREATE TABLE IF NOT EXISTS work.tasks ( 
+CREATE TABLE IF NOT EXISTS tasks.tasks ( 
   id BIGSERIAL NOT NULL PRIMARY KEY, 
   task_id TEXT NOT NULL,
   action TEXT NOT NULL,
@@ -115,8 +112,8 @@ CREATE TABLE IF NOT EXISTS work.tasks (
   processing_at TIMESTAMP,
   processed_at TIMESTAMP
 );`,
-	"create_table_rdpg_schedules": `
-CREATE TABLE IF NOT EXISTS rdpg.schedules ( 
+	"create_table_tasks_schedules": `
+CREATE TABLE IF NOT EXISTS tasks.schedules ( 
   id BIGSERIAL NOT NULL PRIMARY KEY, 
   schedule_id TEXT NOT NULL,
   action TEXT NOT NULL,

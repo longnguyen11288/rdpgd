@@ -1,4 +1,3 @@
-could not import "/Users/wayneeseguin/projects/go/src/github.com/wayneeseguin/rdpg-agent/tasks": found packages scheduler.go (scheduler) and tasks.go (tasks) in /Users/wayneeseguin/projects/go/src/github.com/wayneeseguin/rdpg-agent/tasks
 package main
 
 import (
@@ -9,10 +8,11 @@ import (
 	"strconv"
 	"syscall"
 
-	"github.com/wayneeseguin/rdpg-agent/adminapi"
-	"github.com/wayneeseguin/rdpg-agent/cfsbapi"
-	"github.com/wayneeseguin/rdpg-agent/log"
-	"github.com/wayneeseguin/rdpg-agent/rdpg"
+	"github.com/wayneeseguin/rdpgd/adminapi"
+	"github.com/wayneeseguin/rdpgd/cfsbapi"
+	"github.com/wayneeseguin/rdpgd/log"
+	"github.com/wayneeseguin/rdpgd/rdpg"
+	"github.com/wayneeseguin/rdpgd/tasks"
 )
 
 var (
@@ -75,6 +75,7 @@ func ParseArgs() {
 		if index == 0 {
 			continue
 		}
+
 		switch arg {
 		case "init":
 			r := rdpg.NewRDPG()
@@ -105,21 +106,21 @@ func ParseArgs() {
 
 func usage() {
 	fmt.Fprintf(os.Stdout, `
-rdpg-agent
+rdpg
 
 Usage:
 
-  rdpg-agent [Flag(s)] <Action>
+  rdpg [Flag(s)] <Action>
 
 Actions:
 
   init     Initialize rdpg database schema
-  version  print rdpg-agent version
+  version  print rdpg version
   help     print this message
 
 Flags:
 
-  --version  print rdpg-agent version
+  --version  print rdpg version
   --help     print this message
 
 `)
