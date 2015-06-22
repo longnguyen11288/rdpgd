@@ -30,7 +30,6 @@ func NewServiceInstance(instanceId, serviceId, planId, organizationId, spaceId s
 	re := regexp.MustCompile("[^A-Za-z0-9_]")
 	id := instanceId
 	identifier := strings.ToLower(string(re.ReplaceAll([]byte(id), []byte(""))))
-
 	i = &Instance{
 		InstanceId:     strings.ToLower(instanceId),
 		ServiceId:      strings.ToLower(serviceId),
@@ -65,27 +64,35 @@ func ActiveInstances() (is []Instance, err error) {
 	FROM cfsbapi.instances 
 	WHERE effective_at IS NOT NULL AND decommissioned_at IS NULL
 	LIMIT 1; `
-	r.OpenDB("rdpg")
+	err = r.OpenDB("rdpg")
+	if err != nil {
+		log.Error(fmt.Sprintf("cfsbapi#ActiveInstances() ! %s", err))
+	}
+	defer r.DB.Close()
+
 	err = r.DB.Select(&is, sq)
 	if err != nil {
 		// TODO: Change messaging if err is sql.NoRows then say couldn't find instance with instanceId
 		log.Error(fmt.Sprintf("cfsbapi.ActiveInstances() ! %s", err))
 	}
-	r.DB.Close()
 	return
 }
 
 func FindInstance(instanceId string) (i *Instance, err error) {
 	r := rdpg.NewRDPG()
 	in := Instance{}
-	sq := `SELECT id, instance_id, service_id, plan_id, organization_id, space_id, dbname, dbuser, dbpass FROM cfsbapi.instances WHERE instance_id=lower($1) LIMIT 1;`
-	r.OpenDB("rdpg")
+	sq := `SELECT id, instance_id, service_id, plan_id, organization_id, space_id, dbname, dbuser, dbpass FROM cfsbapi.instances WHERE instance_id=lower(?) LIMIT 1;`
+	err = r.OpenDB("rdpg")
+	if err != nil {
+		log.Error(fmt.Sprintf("cfsbapi#CreateBinding() ! %s", err))
+	}
+	defer r.DB.Close()
+
 	err = r.DB.Get(&in, sq, instanceId)
 	if err != nil {
 		// TODO: Change messaging if err is sql.NoRows then say couldn't find instance with instanceId
 		log.Error(fmt.Sprintf("cfsbapi.FindInstance(%s) ! %s", instanceId, err))
 	}
-	r.DB.Close()
 	i = &in
 	return
 }
@@ -94,13 +101,18 @@ func (i *Instance) Provision() (err error) {
 	// TODO: fetch precreated instance
 	// bind it to this instanceId
 	r := rdpg.NewRDPG()
-	r.OpenDB("rdpg")
+	err = r.OpenDB("rdpg")
+	if err != nil {
+		log.Error(fmt.Sprintf("cfsbapi#Provision(%s) ! %s", i.InstanceId, err))
+	}
 	defer r.DB.Close()
 
 	var id int
 
-	// TODO: What if precreated queue is empty
-	for { // In case we need to wait for one to be created...
+	// TODO: Compute which cluster the database will be assigned to based on
+	//      min(# assigned for each cluster), then targeting this cluster:
+	// TODO: Take into account plan with the above calculation, eg. dedicated vs shared
+	for { // In case we need to wait for a precreated database on the cluster...
 		log.Trace(fmt.Trace(`Querying for a pre-created instance...`))
 		sq := `SELECT id FROM cfsbapi.instances WHERE instance_id IS NULL LIMIT 1;`
 		_, err = r.DB.Get(&id, sq)
@@ -109,25 +121,29 @@ func (i *Instance) Provision() (err error) {
 			return
 		}
 		log.Trace(fmt.Trace(`cfsbapi.Instance#Provision(%s) > Attempting to lock instance %s.`, id))
+
 		i.Id = id
+
 		err = i.Lock()
 		if err != nil {
 			log.Error(fmt.Sprintf("cfsbapi.Instance#Provision(%s) Failed Locking instance %s ! %s", id, err))
-			time.Sleep(1 * time.Milliseconds) // Wait a second...
-			continue                          // ...then try again
+			time.Sleep(5 * time.Second) // Wait a second...
+			continue                    // ...then try again
 		}
-		sq = `UPDATE cfsbapi.instances SET instance_id = ? service_id = ? plan_id = ? organization_id = ? space_id = ? WHERE id=$1`
+
+		sq = `UPDATE cfsbapi.instances SET instance_id = ? service_id = ? plan_id = ? organization_id = ? space_id = ? WHERE id=?`
 		_, err = r.DB.Exec(sq, i.InstanceId, i.ServiceId, i.PlanId, i.OrganizationId, i.SpaceId)
 		if err != nil {
 			log.Error(fmt.Sprintf(`cfsbapi.Instance#Provision(%s) ! %s`, i.InstanceId, err))
 			return
 		}
+
 		err = i.Unlock()
 		if err != nil {
 			log.Error(fmt.Sprintf(`cfsbapi.Instance#Provision(%s) Unlocking ! %s`, i.InstanceId, err))
 			return
 		}
-		// TODO: Enqueue pre-creation of another database.
+		// TODO: Trigger enqueueing of database creation on target cluster via AdminAPI.
 		// TODO: Also have scheduler which enqueues if number precreated databases < 10
 		break
 	}
@@ -136,12 +152,16 @@ func (i *Instance) Provision() (err error) {
 
 func (i *Instance) Remove() (err error) {
 	r := rdpg.NewRDPG()
-	r.OpenDB("rdpg")
-	_, err = r.DB.Exec(`UPDATE cfsbapi.instances SET ineffective_at = CURRENT_TIMESTAMP WHERE id=$1`, i.Id)
+	err = r.OpenDB("rdpg")
 	if err != nil {
 		log.Error(fmt.Sprintf("Instance#Remove(%s) ! %s", i.InstanceId, err))
 	}
+	defer r.DB.Close()
 
+	_, err = r.DB.Exec(`UPDATE cfsbapi.instances SET ineffective_at = CURRENT_TIMESTAMP WHERE id=?`, i.Id)
+	if err != nil {
+		log.Error(fmt.Sprintf("Instance#Remove(%s) ! %s", i.InstanceId, err))
+	}
 	time.Sleep(1) // Wait for the update to propigate to the other hosts.
 
 	for _, host := range r.Hosts() {
@@ -150,7 +170,6 @@ func (i *Instance) Remove() (err error) {
 			log.Error(fmt.Sprintf(`Instance#Provision(%s) %s ! %s`, i.InstanceId, host.IP, err))
 		}
 	}
-	r.DB.Close()
 	return
 }
 
@@ -186,7 +205,12 @@ func (i *Instance) JDBCURI() (uri string) {
 
 func Instances() (si []Instance, err error) {
 	r := rdpg.NewRDPG()
-	r.OpenDB("rdpg")
+	err = r.OpenDB("rdpg")
+	if err != nil {
+		log.Error(fmt.Sprintf("cfsbapi#Instances() ! %s", err))
+	}
+	defer r.DB.Close()
+
 	si = []Instance{}
 	// TODO: Move this into a versioned SQL Function.
 	sq := `SELECT instance_id, service_id, plan_id, organization_id, space_id, dbname, dubser, 'md5'||md5(cfsbapi.instances.dbpass||dubser) as dbpass FROM cfsbapi.instances WHERE ineffective_at IS NULL; `
@@ -195,7 +219,6 @@ func Instances() (si []Instance, err error) {
 		// TODO: Change messaging if err is sql.NoRows then say couldn't find instance with instanceId
 		log.Error(fmt.Sprintf("cfsbapi.Instances() ! %s", err))
 	}
-	r.DB.Close()
 	return
 }
 
@@ -204,15 +227,16 @@ func Remove() (err error) {
 
 func (i *Instance) Lock() (err error) {
 	// Acquire consul schedulerLock to aquire right to schedule tasks.
-	key := fmt.Sprintf("rdpg/cfsb/instance/id/%s", i.Id)
+	// TODO: Add Cluster ID to make this unique across all bdr clusters.
+	key := fmt.Sprintf("rdpg/clusterid/cfsb/instance/id/%s", i.Id)
 	client, _ := consulapi.NewClient(consulapi.DefaultConfig())
-	schedulerLock, err := client.LockKey(key)
+	i.lock, err = client.LockKey(key)
 	if err != nil {
 		log.Error(fmt.Sprintf("scheduler.Schedule() Error Locking Scheduler Key %s ! %s", key, err))
 		return
 	}
 
-	lockCh, err := schedulerLock.Lock(nil) // Acquire Consul K/V Lock
+	i.lockCh, err = i.lock.Lock(nil) // Acquire Consul K/V Lock
 	if err != nil {
 		log.Error(fmt.Sprintf("scheduler.Lock() Error Aquiring Scheduler Key lock %s ! %s", key, err))
 		return
@@ -221,13 +245,12 @@ func (i *Instance) Lock() (err error) {
 	if lockCh == nil {
 		err = fmt.Errorf(`Scheduler Lock not aquired.`)
 	}
-
 	return
 }
 
 func (i *Instance) Unlock() (err error) {
-	if schedulerLock != nil {
-		err = schedulerLock.Unlock()
+	if i.lock != nil {
+		err = i.lock.Unlock()
 	}
 	return
 }

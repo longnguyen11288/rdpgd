@@ -18,11 +18,11 @@ import (
 var (
 	VERSION string
 	pidFile string
+	Role    string
 )
 
 func init() {
 	pidFile = os.Getenv("RDPG_AGENT_PIDFILE")
-	ParseArgs()
 }
 
 // TODO: Allow for --version
@@ -53,21 +53,33 @@ func main() {
 		}
 	}()
 
-	r := rdpg.NewRDPG()
-	err := r.OpenDB("rdpg")
-	if err != nil {
-		log.Error(err.Error())
-		proc, _ := os.FindProcess(os.Getpid())
-		proc.Signal(syscall.SIGTERM)
+	ParseArgs()
+
+	switch Role {
+	case "manager":
+		manager()
+	case "service":
+		service()
+	case "bootstrap":
+		bootstrap()
 	}
+}
 
+func manager() error {
 	go cfsbapi.Listen()
-
 	go tasks.Schedule()
-
 	go tasks.Work()
-
 	adminapi.Listen()
+}
+
+func service() error {
+	go tasks.Schedule()
+	go tasks.Work()
+	adminapi.Listen()
+}
+
+func bootstrap() error {
+	rdpg.Bootstrap()
 }
 
 func ParseArgs() {
@@ -77,20 +89,12 @@ func ParseArgs() {
 		}
 
 		switch arg {
-		case "init":
-			r := rdpg.NewRDPG()
-			err := r.OpenDB("rdpg")
-			if err != nil {
-				fmt.Fprintf(os.Stderr, "%s\n", err)
-				os.Exit(1)
-			}
-
-			err = r.InitSchema()
-			if err != nil {
-				fmt.Fprintf(os.Stderr, "%s\n", err)
-				os.Exit(1)
-			}
-			os.Exit(0)
+		case "bootstrap":
+			Role = "bootstrap"
+		case "manager":
+			Role = "manager"
+		case "service":
+			Role = "service"
 		case "version", "--version", "-version":
 			fmt.Fprintf(os.Stdout, "%s\n", VERSION)
 			os.Exit(0)
@@ -114,9 +118,9 @@ Usage:
 
 Actions:
 
-  init     Initialize rdpg database schema
-  version  print rdpg version
-  help     print this message
+  bootstrap Bootstrap RDPG schemas, filesystem etc...
+  version   print rdpg version
+  help      print this message
 
 Flags:
 

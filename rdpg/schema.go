@@ -11,6 +11,7 @@ import (
 )
 
 // TODO: This should only be run on one host...
+// TODO: InitSchema Lock for each cluster id.
 func (r *RDPG) InitSchema() (err error) {
 	// TODO: if 'rdpg' database DNE,
 	// For each host connect to pgbdr and:
@@ -20,10 +21,13 @@ func (r *RDPG) InitSchema() (err error) {
 
 	log.Trace(fmt.Sprintf("RDPG#initSchema() CONNECT > %s", rdpgURI))
 	var name string
-	r.OpenDB("rdpg")
-	db := r.DB
+	err = r.OpenDB("rdpg")
+	if err != nil {
+		log.Error(fmt.Sprintf("cfsbapi#CreateBinding() ! %s", err))
+	}
+	defer r.DB.Close()
 
-	_, err = db.Exec(`SELECT bdr.bdr_node_join_wait_for_ready();`)
+	_, err = r.DB.Exec(`SELECT bdr.bdr_node_join_wait_for_ready();`)
 	if err != nil {
 		log.Error(fmt.Sprintf("RDPG#initSchema() bdr.bdr_node_join_wait_for_ready ! %s", err))
 	}
@@ -34,7 +38,7 @@ func (r *RDPG) InitSchema() (err error) {
 	}
 	for _, key := range keys {
 		log.Trace(fmt.Sprintf("RDPG#initSchema() SQL[%s]", key))
-		_, err = db.Exec(SQL[key])
+		_, err = r.DB.Exec(SQL[key])
 		if err != nil {
 			log.Error(fmt.Sprintf("RDPG#initSchema() ! %s", err))
 		}
@@ -48,17 +52,17 @@ func (r *RDPG) InitSchema() (err error) {
 		"create_table_cfsbapi_credentials",
 		"create_table_rdpg_consul_watch_notifications",
 		"create_table_rdpg_events",
-		"create_table_rdpg_schedules",
+		"create_table_tasks_schedules",
 	}
 	for _, key := range keys {
 		k := strings.Split(strings.Replace(strings.Replace(key, "create_table_", "", 1), "_", ".", 1), ".")
 		sq := fmt.Sprintf(`SELECT table_name FROM information_schema.tables where table_schema='%s' AND table_name='%s';`, k[0], k[1])
 
 		log.Trace(fmt.Sprintf("RDPG#initSchema() %s", sq))
-		if err := db.QueryRow(sq).Scan(&name); err != nil {
+		if err := r.DB.QueryRow(sq).Scan(&name); err != nil {
 			if err == sql.ErrNoRows {
 				log.Trace(fmt.Sprintf("RDPG#initSchema() SQL[%s]", key))
-				_, err = db.Exec(SQL[key])
+				_, err = r.DB.Exec(SQL[key])
 				if err != nil {
 					log.Error(fmt.Sprintf("RDPG#initSchema() ! %s", err))
 				}
@@ -70,9 +74,9 @@ func (r *RDPG) InitSchema() (err error) {
 	}
 
 	// TODO: Move initial population of services out of rdpg to Admin API.
-	if err := db.QueryRow("SELECT name FROM cfsbapi.services WHERE name='rdpg' LIMIT 1;").Scan(&name); err != nil {
+	if err := r.DB.QueryRow("SELECT name FROM cfsbapi.services WHERE name='rdpg' LIMIT 1;").Scan(&name); err != nil {
 		if err == sql.ErrNoRows {
-			if _, err = db.Exec(SQL["insert_default_cfsbapi_services"]); err != nil {
+			if _, err = r.DB.Exec(SQL["insert_default_cfsbapi_services"]); err != nil {
 				log.Error(fmt.Sprintf("rdpg.initSchema(insert_default_cfsbapi_services) %s", err))
 				return err
 			}
@@ -83,9 +87,9 @@ func (r *RDPG) InitSchema() (err error) {
 	}
 
 	// TODO: Move initial population of services out of rdpg to Admin API.
-	if err = db.QueryRow("SELECT name FROM cfsbapi.plans WHERE name='shared' LIMIT 1;").Scan(&name); err != nil {
+	if err = r.DB.QueryRow("SELECT name FROM cfsbapi.plans WHERE name='shared' LIMIT 1;").Scan(&name); err != nil {
 		if err == sql.ErrNoRows {
-			if _, err = db.Exec(SQL["insert_default_cfsbapi_plans"]); err != nil {
+			if _, err = r.DB.Exec(SQL["insert_default_cfsbapi_plans"]); err != nil {
 				log.Error(fmt.Sprintf("rdpg.initSchema(insert_default_cfsbapi_plans) %s", err))
 				return err
 			}
@@ -94,7 +98,7 @@ func (r *RDPG) InitSchema() (err error) {
 			return err
 		}
 	}
-	db.Close()
+	r.DB.Close()
 
 	for _, host := range r.Hosts() {
 		host.Database = "postgres"
@@ -126,10 +130,12 @@ func (r *RDPG) InitSchema() (err error) {
 					}
 				} else {
 					log.Error(fmt.Sprintf("rdpg.initSchema() %s", err))
+					db.Close()
 					return err
 				}
 			}
 		}
+
 		db.Close()
 	}
 	return nil

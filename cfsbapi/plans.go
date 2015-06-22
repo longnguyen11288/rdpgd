@@ -24,13 +24,17 @@ type Plan struct {
 
 func FindPlan(planId string) (plan *Plan, err error) {
 	r := rdpg.NewRDPG()
-	r.OpenDB("rdpg")
+	err = r.OpenDB("rdpg")
+	if err != nil {
+		log.Error(fmt.Sprintf("cfsbapi#FindPlan(%s) ! %s", planId, err))
+	}
+	defer r.DB.Close()
+
 	plan = &Plan{}
-	sq := `SELECT id,name,description FROM cfsbapi.plans WHERE id=$1 LIMIT 1;`
+	sq := `SELECT id,name,description FROM cfsbapi.plans WHERE id=? LIMIT 1;`
 	err = r.DB.Get(&plan, sq, planId)
 	if err != nil {
 		log.Error(fmt.Sprintf("cfsbapi.FindPlan(%s) %s", planId, err))
 	}
-	r.DB.Close()
 	return plan, err
 }

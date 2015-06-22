@@ -34,7 +34,8 @@ func NewTask() *Task {
 // Attempt to obtain a consul Lock, return err if lock if fail to obtain lock.
 func (t *Task) Lock() (err error) {
 	client, _ := consulapi.NewClient(consulapi.DefaultConfig())
-	t.lock, err = client.LockKey(fmt.Sprintf("rdpg/work/tasks/%s/lock", t.TaskId))
+	// TODO: Add ClusterID to task locking
+	t.lock, err = client.LockKey(fmt.Sprintf("rdpg/clusterId/tasks/%s", t.TaskId))
 	if err != nil {
 		log.Error(fmt.Sprintf("tasks.Lock() Error aquiring lock for task %s ! %s", t.TaskId, err))
 		return
@@ -92,7 +93,7 @@ func (t *Task) Dequeue() (err error) {
 		return
 	}
 
-	// TODO: locked_by...
+	// TODO: Add the information for who has this task locked using IP
 	sq = fmt.Sprintf(`UPDATE tasks.tasks SET processing_at=CURRENT_TIMESTAMP WHERE task_id = '%s';`, t.TaskId)
 	err = r.DB.Select(&t, sq)
 	if err != nil {

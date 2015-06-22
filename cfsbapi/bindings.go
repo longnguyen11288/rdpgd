@@ -49,21 +49,23 @@ func CreateBinding(instanceId, bindingId string) (binding *Binding, err error) {
 	}
 
 	r := rdpg.NewRDPG()
-	r.OpenDB("rdpg")
+	err = r.OpenDB("rdpg")
+	if err != nil {
+		log.Error(fmt.Sprintf("cfsbapi#CreateBinding(%s) ! %s", bindingId, err))
+	}
+	defer r.DB.Close()
 
-	sq := `INSERT INTO cfsbapi.bindings (instance_id,binding_id) VALUES ($1,$2);`
+	sq := `INSERT INTO cfsbapi.bindings (instance_id,binding_id) VALUES (?,?);`
 	_, err = r.DB.Query(sq, binding.InstanceId, binding.BindingId)
 	if err != nil {
 		log.Error(fmt.Sprintf(`cfsbapi.CreateBinding(%s) ! %s`, bindingId, err))
 	}
 
-	sq = `INSERT INTO cfsbapi.credentials (instance_id,binding_id,host,port,dbuser,dbpass,dbname) VALUES ($1,$2,$3,$4,$5,$6,$7);`
+	sq = `INSERT INTO cfsbapi.credentials (instance_id,binding_id,host,port,dbuser,dbpass,dbname) VALUES (?,?,?,?,?,?,?);`
 	_, err = r.DB.Query(sq, binding.InstanceId, binding.BindingId, binding.Creds.Host, binding.Creds.Port, binding.Creds.UserName, binding.Creds.Password, binding.Creds.Database)
 	if err != nil {
 		log.Error(fmt.Sprintf(`cfsbapi.CreateBinding(%s) ! %s`, bindingId, err))
 	}
-
-	r.DB.Close()
 
 	return
 }
@@ -75,29 +77,37 @@ func RemoveBinding(bindingId string) (binding *Binding, err error) {
 		return
 	}
 	r := rdpg.New()
-	sq := `UPDATE cfsbapi.bindings SET ineffective_at = CURRENT_TIMESTAMP WHERE binding_id = $1;`
+	sq := `UPDATE cfsbapi.bindings SET ineffective_at = CURRENT_TIMESTAMP WHERE binding_id = ?;`
 	log.Trace(fmt.Sprintf(`cfsbapi.RemoveBinding(%s) > %s`, bindingId, sq))
-	r.OpenDB("rdpg")
+	err = r.OpenDB("rdpg")
+	if err != nil {
+		log.Error(fmt.Sprintf("cfsbapi#RemoveBinding(%s) ! %s", bindingId, err))
+	}
+	defer r.DB.Close()
+
 	_, err = r.DB.Query(sq, bindingId)
 	if err != nil {
 		log.Error(fmt.Sprintf(`cfsbapi.CreateBinding(%s) ! %s`, bindingId, err))
 	}
-	r.DB.Close()
 	return
 }
 
 func FindBinding(bindingId string) (binding *Binding, err error) {
 	r := rdpg.New()
 	b := Binding{}
-	sq := `SELECT id,instance_id, binding_id FROM cfsbapi.bindings WHERE binding_id=lower($1) LIMIT 1;`
+	sq := `SELECT id,instance_id, binding_id FROM cfsbapi.bindings WHERE binding_id=lower(?) LIMIT 1;`
 	log.Trace(fmt.Sprintf(`cfsbapi.FindBinding(%s) > %s`, bindingId, sq))
-	r.OpenDB("rdpg")
+	err = r.OpenDB("rdpg")
+	if err != nil {
+		log.Error(fmt.Sprintf("cfsbapi#FindBinding(%s) ! %s", bindingId, err))
+	}
+	defer r.DB.Close()
+
 	err = r.DB.Get(&b, sq, bindingId)
 	if err != nil {
 		// TODO: Change messaging if err is sql.NoRows then say couldn't find binding with bindingId
 		log.Error(fmt.Sprintf("cfsbapi.FindBinding(%s) ! %s", bindingId, err))
 	}
-	r.DB.Close()
 	binding = &b
 	return
 }

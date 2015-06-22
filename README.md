@@ -1,4 +1,7 @@
-# Reliable Distributed PostgreSQL AIP with CF Service Broker API
+# Reliable Distributed PostgreSQL with CF Service Broker API
+
+Where we take "Reliable" to mean working towards the goals of Fault Tolerance,
+Self Healing and High Availability. 
 
 For development see `docs/development.md`.
 

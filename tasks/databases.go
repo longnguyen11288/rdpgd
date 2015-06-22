@@ -28,6 +28,9 @@ func CreateDatabase(data string) (err error) {
 		Pass:     dbpass,
 	}
 
+	// TODO: Keep the databases under rdpg schema, link to them in the
+	// cfsb.instances table so that we separate the concerns of CF and databases.
+
 	err = b.CreateUser(i.User, i.Pass)
 	if err != nil {
 		log.Error(fmt.Sprintf("tasks.CreateDatabase(%s) CreateUser(%s) ! %s", i.InstanceId, i.User, err))
@@ -47,14 +50,18 @@ func CreateDatabase(data string) (err error) {
 	}
 
 	r := rdpg.NewRDPG()
-	r.OpenDB("rdpg")
-	sq := `INSERT INTO cfsbapi.instances (dbname, dbuser, dbpass) VALUES ($1,$2,$3);`
+	err = r.OpenDB("rdpg")
+	if err != nil {
+		log.Error(fmt.Sprintf(`tasks.CreateDatabase(%s) ! %s`, i.InstanceId, err))
+	}
+	defer r.DB.Close()
+
+	sq := `INSERT INTO cfsbapi.instances (dbname, dbuser, dbpass) VALUES (?,?,?);`
 	log.Trace(fmt.Sprintf(`tasks.CreateDatabase(%s) > %s`, i.InstanceId, sq))
 	_, err = r.DB.Query(sq, i.Database, i.User, i.Pass)
 	if err != nil {
 		log.Error(fmt.Sprintf(`tasks.CreateDatabase(%s) ! %s`, i.InstanceId, err))
 	}
-	defer r.DB.Close()
 	// TODO: Insert task to create new database.
 	return
 }

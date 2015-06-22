@@ -12,6 +12,11 @@ import (
 	"github.com/wayneeseguin/rdpgd/rdpg"
 )
 
+var SQL map[string]string = map[string]string{
+	"bdr_nodes":     `SELECT * FROM bdr.bdr_nodes;`,
+	"bdr_nodes_dsn": `SELECT node_local_dsn FROM bdr.bdr_nodes;`,
+}
+
 type BDR struct {
 	URI string
 	DB  *sqlx.DB
@@ -23,13 +28,16 @@ func NewBDR(uri) (r *BDR) {
 }
 
 func (b *BDR) Hosts() (hosts []Host) {
-	// TODO: Allow for managing multiple BDR clusters,
+	// TODO: Allow for managing multiple BDR clusters, the list of nodes should not
+	// be coming from the nodes themselves but instead through the configuration
+	// they were registered from.
 	//   for now we assume we are on the same cluster as the RDPG systems database.
 	r := rdpg.NewRDPG()
-	db, err := r.OpenDB("postgres")
+	err := r.OpenDB("postgres")
 	if err != nil {
 		log.Error(fmt.Sprintf("bdr.BDR#Hosts() ! %s", err))
 	}
+	defer r.DB.Close()
 
 	// TODO: Populate list of rdpg hosts for given URL,
 	//`SELECT node_local_dsn FROM bdbdr_nodes INTO rdpg.hosts (node_local_dsn);`
@@ -39,7 +47,7 @@ func (b *BDR) Hosts() (hosts []Host) {
 	}
 
 	dsns := []dsn{}
-	err = db.Select(&dsns, SQL["bdr_nodes_dsn"])
+	err = r.DB.Select(&dsns, SQL["bdr_nodes_dsn"])
 	if err != nil {
 		log.Error(fmt.Sprintf("RDPG#Hosts() %s ! %s", SQL["bdr_nodes"], err))
 	}
@@ -55,13 +63,12 @@ func (b *BDR) Hosts() (hosts []Host) {
 		hosts = append(hosts, host)
 	}
 	// TODO: Get this information into the database and then out of the rdpg.hosts
-	//rows, err := db.Query("SELECT host,port,user,'postgres' FROM rdpg.hosts;")
+	//rows, err := r.DB.Query("SELECT host,port,user,'postgres' FROM rdpg.hosts;")
 	//if err != nil {
 	//	log.Error(fmt.Sprintf("Hosts() %s", err))
 	//} else {
 	//	sqlx.StructScan(rows, hosts)
 	//}
-	db.Close()
 	return hosts
 }
 

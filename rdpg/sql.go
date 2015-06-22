@@ -44,8 +44,6 @@ CREATE TABLE IF NOT EXISTS cfsbapi.plans (
   ineffective_at TIMESTAMP
 );
 `,
-	"bdr_nodes":     `SELECT * FROM bdr.bdr_nodes;`,
-	"bdr_nodes_dsn": `SELECT node_local_dsn FROM bdr.bdr_nodes;`,
 	"create_table_cfsbapi_instances": `
 CREATE TABLE IF NOT EXISTS cfsbapi.instances (
   id                BIGSERIAL PRIMARY KEY NOT NULL,
@@ -115,12 +113,12 @@ CREATE TABLE IF NOT EXISTS tasks.tasks (
 	"create_table_tasks_schedules": `
 CREATE TABLE IF NOT EXISTS tasks.schedules ( 
   id BIGSERIAL NOT NULL PRIMARY KEY, 
-  schedule_id TEXT NOT NULL,
   action TEXT NOT NULL,
   data TEXT NOT NULL,
+  frequency INTERVAL,
   enabled BOOLEAN DEFAULT true,
-  created_at TIMESTAMP DEFAULT NOW(),
-  last_scheduled_at TIMESTAMP,
+  last_scheduled_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );`,
 	"create_table_rdpg_config": `
 CREATE TABLE IF NOT EXISTS rdpg.config ( 
@@ -129,6 +127,10 @@ CREATE TABLE IF NOT EXISTS rdpg.config (
 		created_at TIMESTAMP DEFAULT NOW(),
 		updated_at TIMESTAMP
 );`,
+	"insert_default_tasks_schedules": `
+INSERT INTO tasks.schedules (action,data,frequency,enabled) VALUES
+('PrecreateDatabase','','30 seconds'::interval, true)
+;`,
 	"insert_default_rdpg_config": `
 INSERT INTO rdpg.config (key,value)
 VALUES 

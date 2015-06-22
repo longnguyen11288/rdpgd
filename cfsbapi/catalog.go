@@ -15,12 +15,12 @@ func (c *Catalog) Fetch() (err error) {
 	r := rdpg.NewRDPG()
 	err = r.OpenDB("rdpg")
 	if err != nil {
-		log.Error(fmt.Sprintf("Failed fetching catalog from database: %s", err))
+		log.Error(fmt.Sprintf("cfsbapi.Catalog#FetchFailed() fetching catalog from database: %s", err))
 		return
 	}
-	db := r.DB
+	defer r.DB.Close()
 
-	err = db.Select(&c.Services, `SELECT service_id,name,description,bindable FROM cfsbapi.services;`)
+	err = r.DB.Select(&c.Services, `SELECT service_id,name,description,bindable FROM cfsbapi.services;`)
 	if err != nil {
 		log.Error(fmt.Sprintf("Catalog#Fetch() selecting from cfsbapi.services %s", err.Error()))
 		return
@@ -29,7 +29,7 @@ func (c *Catalog) Fetch() (err error) {
 	// TODO: Account for plans being associated with a service.
 	for i, _ := range c.Services {
 		service := &c.Services[i]
-		err = db.Select(&service.Plans, `SELECT plan_id,name,description FROM cfsbapi.plans;`)
+		err = r.DB.Select(&service.Plans, `SELECT plan_id,name,description FROM cfsbapi.plans;`)
 		if err != nil {
 			log.Error(fmt.Sprintf("Catalog#Fetch() Service Plans %s", err.Error()))
 			return

@@ -36,15 +36,14 @@ func init() {
 		proc, _ := os.FindProcess(os.Getpid())
 		proc.Signal(syscall.SIGTERM)
 	}
+	defer db.Close()
 
 	err = db.Ping()
 	if err != nil {
-		db.Close()
 		log.Error(fmt.Sprintf("Unable to Ping %s err: %s", rdpgURI, err))
 		proc, _ := os.FindProcess(os.Getpid())
 		proc.Signal(syscall.SIGTERM)
 	}
-	db.Close()
 }
 
 // TODO: RDPG Struct => RDPG Struct, allowing for multiple instances of RDPG
@@ -66,7 +65,7 @@ func (r *RDPG) SetURI(uri string) (err error) {
 }
 
 // TODO: Instead pass back *sql.DB
-func (r *RDPG) OpenDB(dbname string) error {
+func (r *RDPG) OpenDB(dbname string) (err error) {
 	if r.DB == nil {
 		u, err := url.Parse(r.URI)
 		if err != nil {
@@ -118,5 +117,15 @@ func CallAdminAPI(ip, method, path string) (err error) {
 		log.Error(fmt.Sprintf(`pg.Host<%s>#AdminAPI(%s,%s) ! %s`, ip, method, url, err))
 	}
 	resp.Body.Close()
+	return
+}
+
+func Bootstrap() (err error) {
+	r := NewRDPG()
+	err = r.InitSchema()
+	if err != nil {
+		proc, _ := os.FindProcess(os.Getpid())
+		proc.Signal(syscall.SIGTERM)
+	}
 	return
 }
