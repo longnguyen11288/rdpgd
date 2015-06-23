@@ -10,6 +10,7 @@ import (
 
 	consulapi "github.com/hashicorp/consul/api"
 	"github.com/jmoiron/sqlx"
+	"github.com/wayneeseguin/rdpgd/bdr"
 	"github.com/wayneeseguin/rdpgd/log"
 )
 
@@ -52,6 +53,7 @@ func NewRDPG() (r *RDPG) {
 }
 
 func (r *RDPG) SetURI(uri string) (err error) {
+	// TODO: SetURI likely is not needed anymore.
 	if uri == "" || uri[0:13] != "postgresql://" {
 		// TODO: use uri.Parse to further validate URI.
 		err = fmt.Errorf(`Malformed postgresql:// URI`, uri)
@@ -59,6 +61,19 @@ func (r *RDPG) SetURI(uri string) (err error) {
 		return
 	}
 	r.URI = uri
+	return
+}
+
+func Clusters() (clusters []string, err error) {
+	client, err := consulapi.NewClient(consulapi.DefaultConfig())
+	if err != nil {
+		return
+	}
+	catalog := client.Catalog()
+	clusters, err = catalog.Datacenters()
+	if err != nil {
+		return
+	}
 	return
 }
 
@@ -121,6 +136,7 @@ func CallAdminAPI(ip, method, path string) (err error) {
 	return
 }
 
+// Bootstrap the RDPG Database and associated services.
 func (r *RDPG) Bootstrap() (err error) {
 	key := fmt.Sprintf("rdpg/%s/bootstrap", r.ClusterID)
 	client, _ := consulapi.NewClient(consulapi.DefaultConfig())
@@ -149,20 +165,46 @@ func (r *RDPG) Bootstrap() (err error) {
 		proc, _ := os.FindProcess(os.Getpid())
 		proc.Signal(syscall.SIGTERM)
 	}
+
+	b := bdr.NewBDR(r.ClusterID)
+	err = b.CreateReplicationGroup(`rdpg`)
+	if err != nil {
+		err = lock.Unlock()
+		if err != nil {
+			log.Error(fmt.Sprintf(`rdpg.Bootstrap() Error Starting Replication for database 'rdpg' ! %s`, err))
+		}
+		proc, _ := os.FindProcess(os.Getpid())
+		proc.Signal(syscall.SIGTERM)
+	}
 	// Note that we are intentionally not unlocking the cluster bootsrap if
 	// bootstrapping was successful as we only want it done once per cluster.
-	return
-}
 
-func Clusters() (clusters []string, err error) {
-	client, err := consulapi.NewClient(consulapi.DefaultConfig())
+	cluster, err := NewCluster(r.ClusterID)
 	if err != nil {
-		return
+		log.Error(fmt.Sprintf(`rdpg.Bootstrap() ! %s`, err))
 	}
-	catalog := client.Catalog()
-	clusters, err = catalog.Datacenters()
-	if err != nil {
-		return
+
+	for index, node := range cluster.Nodes {
+		// Set write master if it is the first node
+		if index == 0 {
+			err = cluster.SetWriteMaster(&node)
+			if err != nil {
+				log.Error(fmt.Sprintf(`rdpg.Bootstrap() Setting Write Master ! %s`, err))
+			}
+		}
+
+		// Reconfigure PGBouncer
+		err = CallAdminAPI(node.PG.IP, "PUT", "services/pgbouncer/configure")
+		if err != nil {
+			log.Error(fmt.Sprintf(`rdpg.Bootstrap(%s) reconfigure pgbouncer %s ! %s`, node.PG.IP, err))
+		}
+
+		// Reconfigure HAProxy
+		err = CallAdminAPI(node.PG.IP, "PUT", "services/haproxy/configure")
+		if err != nil {
+			log.Error(fmt.Sprintf(`rdpg.Bootstrap(%s) reconfigure haroxy %s ! %s`, node.PG.IP, err))
+		}
 	}
+
 	return
 }

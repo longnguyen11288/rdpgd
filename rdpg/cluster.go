@@ -42,6 +42,30 @@ func NewCluster(dc string) (c *Cluster, err error) {
 	return
 }
 
+func (c *Cluster) SetWriteMaster(n *Node) (err error) {
+	client, err := consulapi.NewClient(consulapi.DefaultConfig())
+	if err != nil {
+		log.Error(fmt.Sprintf("rdpg.IAmWriteMaster() ! %s", err))
+		return
+	}
+	agent := client.Agent()
+	registration := &consulapi.AgentServiceRegistration{
+		ID:      "postgresql",
+		Name:    "master",
+		Tags:    []string{},
+		Address: n.PG.IP,
+		Port:    5432,
+		Check: &consulapi.AgentServiceCheck{
+			Interval: "10s",
+			Script:   "/var/vcap/jobs/rdpg-service/bin/check ha_pb_pgb",
+			TTL:      "0s",
+			Timeout:  "5s",
+		},
+	}
+	agent.ServiceRegister(registration)
+	return
+}
+
 // Returns a cluster's write master Node
 func (c *Cluster) WriteMaster() (n *Node, err error) {
 	client, err := consulapi.NewClient(consulapi.DefaultConfig())
@@ -55,9 +79,7 @@ func (c *Cluster) WriteMaster() (n *Node, err error) {
 	if err != nil {
 		log.Error(fmt.Sprintf(`rdpg.WriteMaster() ! %s`, err))
 	}
-
 	s := svc[0]
 	n = &Node{PG: &pg.PG{IP: s.Address}}
-
 	return
 }

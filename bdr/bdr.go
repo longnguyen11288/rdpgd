@@ -2,7 +2,6 @@ package bdr
 
 import (
 	"fmt"
-	"strings"
 
 	consulapi "github.com/hashicorp/consul/api"
 
@@ -10,7 +9,6 @@ import (
 	_ "github.com/lib/pq"
 	"github.com/wayneeseguin/rdpgd/log"
 	"github.com/wayneeseguin/rdpgd/pg"
-	"github.com/wayneeseguin/rdpgd/rdpg"
 )
 
 var SQL map[string]string = map[string]string{
@@ -29,36 +27,21 @@ func NewBDR(dc string) (r *BDR) {
 }
 
 func (b *BDR) PGNodes() (nodes []pg.PG, err error) {
-	// TODO: Allow for managing multiple BDR clusters, the list of nodes should not
-	// be coming from the nodes themselves but instead through the configuration
-	// they were registered from.
-	//   for now we assume we are on the same cluster as the RDPG systems database.
-
-	r := rdpg.NewRDPG()
-	err = r.OpenDB("postgres")
+	client, err := consulapi.NewClient(consulapi.DefaultConfig())
 	if err != nil {
-		log.Error(fmt.Sprintf("bdr.BDR#PGNodes ! %s", err))
+		log.Error(fmt.Sprintf("bdr.PGNodes() %s ! %s", b.ClusterID, err))
+		return
 	}
-	defer r.DB.Close()
-
-	type dsn struct {
-		DSN string `db:"node_local_dsn"`
-	}
-
-	dsns := []dsn{}
-	err = r.DB.Select(&dsns, SQL["bdr_nodes_dsn"])
+	catalog := client.Catalog()
+	q := consulapi.QueryOptions{Datacenter: b.ClusterID}
+	catalogNodes, _, err := catalog.Nodes(&q)
 	if err != nil {
-		log.Error(fmt.Sprintf("bdr.BDR#PGNodes %s ! %s", SQL["bdr_nodes"], err))
+		log.Error(fmt.Sprintf("bdr.PGNodes() %s ! %s", b.ClusterID, err))
+		return
 	}
 
-	for _, t := range dsns {
-		node := pg.PG{}
-		s := strings.Split(t.DSN, " ")
-		node.IP = strings.Split(s[0], "=")[1]
-		node.Port = strings.Split(s[1], "=")[1]
-		node.User = strings.Split(s[2], "=")[1]
-		node.Database = `postgres` // strings.Split(s[3], "=")[1]
-		nodes = append(nodes, node)
+	for _, catalogNode := range catalogNodes {
+		nodes = append(nodes, pg.PG{IP: catalogNode.Address})
 	}
 	return
 }
@@ -218,12 +201,12 @@ func (b *BDR) DeleteReplicationGroup(dbname string) (err error) {
 	return nil
 }
 
-func IAmWriteMaster() (b bool) {
+func isWriteMaster() (b bool) {
 	b = false
 
 	client, err := consulapi.NewClient(consulapi.DefaultConfig())
 	if err != nil {
-		log.Error(fmt.Sprintf("rdpg.IAmWriteMaster() ! %s", err))
+		log.Error(fmt.Sprintf("bdr.IAmWriteMaster() ! %s", err))
 		return
 	}
 	agent := client.Agent()
@@ -236,7 +219,7 @@ func IAmWriteMaster() (b bool) {
 	q := consulapi.QueryOptions{Datacenter: dc}
 	svc, _, err := catalog.Service("master", "", &q)
 	if err != nil {
-		log.Error(fmt.Sprintf(`rdpg.IAmWriteMaster() ! %s`, err))
+		log.Error(fmt.Sprintf(`bdr.IAmWriteMaster() ! %s`, err))
 	}
 
 	if svc[0].Address == myIP {
