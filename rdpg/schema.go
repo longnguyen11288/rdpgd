@@ -10,9 +10,9 @@ import (
 	"github.com/wayneeseguin/rdpgd/log"
 )
 
-// TODO: This should only be run on one host...
-// TODO: InitSchema Lock for each cluster id.
 func (r *RDPG) InitSchema() (err error) {
+	// Note: Locking is at Bootstrap() level.
+
 	// TODO: if 'rdpg' database DNE,
 	// For each host connect to pgbdr and:
 	//   CreatDatabase('rdpg','postgres')
@@ -100,11 +100,12 @@ func (r *RDPG) InitSchema() (err error) {
 	}
 	r.DB.Close()
 
-	for _, host := range r.Hosts() {
-		host.Database = "postgres"
-		db, err := host.Connect()
+	cluster, err := NewCluster(r.ClusterID)
+	for _, pg := range cluster.Nodes {
+		pg.PG.Database = "postgres"
+		db, err := pg.PG.Connect()
 		if err != nil {
-			log.Error(fmt.Sprintf("RDPG#DropUser(%s) %s ! %s", name, host.IP, err))
+			log.Error(fmt.Sprintf("RDPG#DropUser(%s) %s ! %s", name, pg.PG.IP, err))
 			return err
 		}
 		log.Trace(fmt.Sprintf("RDPG#initSchema() SQL[%s]", "postgres_schemas"))

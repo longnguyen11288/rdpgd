@@ -2,12 +2,13 @@ package tasks
 
 import (
 	"fmt"
+	"os"
+	"syscall"
 	"time"
 
 	consulapi "github.com/hashicorp/consul/api"
 	"github.com/wayneeseguin/rdpgd/log"
 	"github.com/wayneeseguin/rdpgd/rdpg"
-	"github.com/wayneeseguin/rdpgd/uuid"
 )
 
 var (
@@ -18,6 +19,7 @@ var (
 type Schedule struct {
 	Id       string `db:"id" json:"id"`
 	Schedule string `db:"schedule" json:"schedule"`
+	Role     string `db:"role" json:"role"`
 	Action   string `db:"action" json:"action"`
 	Data     string `db:"data" json:"data"`
 	TTL      string `db:"ttl" json:"ttl"`
@@ -41,19 +43,20 @@ Interval + start_at clock time of day
 
 */
 func Scheduler() {
-	scheduler := Scheduler{}
-
 	r := rdpg.NewRDPG()
-	err = r.OpenDB("rdpg")
+	err := r.OpenDB("rdpg")
 	if err != nil {
 		log.Error(fmt.Sprintf(`tasks.Scheduler() Opening rdpg database ! %s`, err))
-		Unlock()
-		continue
+		SchedulerUnlock()
+
+		log.Error(fmt.Sprintf("tasks.Scheduler() Failed connecting to %s err: %s", r.URI, err))
+		proc, _ := os.FindProcess(os.Getpid())
+		proc.Signal(syscall.SIGTERM)
 	}
 	defer r.DB.Close()
 
 	for {
-		err := ScheculerLock()
+		err := SchedulerLock()
 		if err != nil {
 			continue
 		}
@@ -67,18 +70,20 @@ func Scheduler() {
 			SchedulerUnlock()
 			continue
 		}
-		sq := fmt.Sprintf(`UPDATE tasks.schedules SET last_scheduled_at = CURRENT_TIMESTAMP;`)
-		err = r.DB.Exec(sq)
-		if err != nil {
-			log.Error(fmt.Sprintf(`tasks.Scheduler() Selecting Schedules ! %s`, err))
-		}
+		for _, schedule := range schedules {
+			sq = fmt.Sprintf(`UPDATE tasks.schedules SET last_scheduled_at = CURRENT_TIMESTAMP WHERE id=%s;`, schedule.Id)
+			_, err = r.DB.Exec(sq)
+			if err != nil {
+				log.Error(fmt.Sprintf(`tasks.Scheduler() Selecting Schedules ! %s`, err))
+			}
 
-		task := NewTask()
-		task.Role = schedule.Role
-		task.Action = schedule.Action
-		task.Data = schedule.Data
-		task.TTL = schedule.TTL
-		task.Enqueue()
+			task := NewTask()
+			task.Role = schedule.Role
+			task.Action = schedule.Action
+			task.Data = schedule.Data
+			task.TTL = schedule.TTL
+			task.Enqueue()
+		}
 
 		SchedulerUnlock() // Release Consul K/V Lock.
 
@@ -87,13 +92,13 @@ func Scheduler() {
 }
 
 func NewSchedule() (s *Schedule) {
-	return &Schedule{ScheduleId: uuid.NewUUID().String()}
+	return &Schedule{}
 }
 
 func SchedulerLock() (err error) {
 	// Acquire consul schedulerLock to aquire right to schedule tasks.
 	r := rdpg.NewRDPG()
-	key := fmt.Sprintf("rdpg/%s/tasks/scheduler", r.Datacenter)
+	key := fmt.Sprintf("rdpg/%s/tasks/scheduler", r.ClusterID)
 	client, _ := consulapi.NewClient(consulapi.DefaultConfig())
 	lock, err = client.LockKey(key)
 	if err != nil {

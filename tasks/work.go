@@ -2,27 +2,30 @@ package tasks
 
 import (
 	"fmt"
+	"os"
+	"syscall"
 	"time"
 
 	"github.com/wayneeseguin/rdpgd/log"
 	"github.com/wayneeseguin/rdpgd/rdpg"
-	"github.com/wayneeseguin/rdpgd/tasks"
 )
 
 func Work() {
 	r := rdpg.NewRDPG()
 	err := r.OpenDB("rdpg")
 	if err != nil {
-		log.Error(fmt.Sprintf(`tasks.Work() Error opening rdpg database ! %s`, err))
+		log.Error(fmt.Sprintf("tasks.Work() Failed connecting to %s err: %s", r.URI, err))
+		proc, _ := os.FindProcess(os.Getpid())
+		proc.Signal(syscall.SIGTERM)
 	}
 	defer r.DB.Close()
 
 	for {
 		// TODO: only work for my role type: write vs read
 		// eg. WHERE role = 'read'
-		tasks := []tasks.Task{}
+		tasks := []Task{}
 		sq := `SELECT task_id,func,data,ttl FROM tasks.tasks WHERE processed_at IS NULL AND locked_by IS NULL ORDER BY created_at DESC LIMIT 10;`
-		err = r.DB.Select(&task, sq)
+		err = r.DB.Select(&tasks, sq)
 		if err != nil {
 			log.Error(fmt.Sprintf(`tasks.Work() Selecting Task ! %s`, err))
 		}
@@ -48,7 +51,7 @@ func Work() {
 				// Role: read
 				err = BackupAllDatabases(task.Data)
 			case "PrecreateCreateDatabase":
-				err = PrecreateDatabase
+				err = PrecreateDatabase(task.Data)
 			default:
 				err = fmt.Errorf(`tasks.Work() Unknown Task Action %s`, task.Action)
 			}
@@ -60,7 +63,7 @@ func Work() {
 				// TODO: VACUUM FULL the tasks.tasks EVERY MINUTE
 				_, err = r.DB.Exec(sq)
 				if err != nil {
-					log.Error(fmt.Sprintf(`tasks.Work() Error setting processed_at for task %s ! %s`, t.TaskId, err))
+					log.Error(fmt.Sprintf(`tasks.Work() Error setting processed_at for task %s ! %s`, task.TaskId, err))
 				}
 			}
 			task.Unlock()

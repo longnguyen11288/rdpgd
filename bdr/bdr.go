@@ -19,23 +19,23 @@ var SQL map[string]string = map[string]string{
 }
 
 type BDR struct {
-	URI string
-	DB  *sqlx.DB
+	ClusterID string `db:"cluster_id" json:"cluster_id"`
+	DB        *sqlx.DB
 }
 
-func NewBDR(uri) (r *BDR) {
-	r = &BDR{URI: uri}
+func NewBDR(dc string) (r *BDR) {
+	r = &BDR{ClusterID: dc}
 	return
 }
 
-func (b *BDR) PGNodes(nodes []Node) {
+func (b *BDR) PGNodes() (nodes []pg.PG, err error) {
 	// TODO: Allow for managing multiple BDR clusters, the list of nodes should not
 	// be coming from the nodes themselves but instead through the configuration
 	// they were registered from.
 	//   for now we assume we are on the same cluster as the RDPG systems database.
 
 	r := rdpg.NewRDPG()
-	err := r.OpenDB("postgres")
+	err = r.OpenDB("postgres")
 	if err != nil {
 		log.Error(fmt.Sprintf("bdr.BDR#PGNodes ! %s", err))
 	}
@@ -60,16 +60,21 @@ func (b *BDR) PGNodes(nodes []Node) {
 		node.Database = `postgres` // strings.Split(s[3], "=")[1]
 		nodes = append(nodes, node)
 	}
-	return nodes
+	return
 }
 
 // Question: Should we extract the BDR related functionality into a bd* package?
 func (b *BDR) CreateUser(dbuser, dbpass string) (err error) {
-	for _, pg := range PGNodes {
+	nodes, err := b.PGNodes()
+	if err != nil {
+		log.Error(fmt.Sprintf(`bdr.BDR#CreateUser(%s) %s ! %s`, dbuser, err))
+	}
+
+	for _, pg := range nodes {
 		pg.Set(`database`, `postgres`)
 		err = pg.CreateUser(dbuser, dbpass)
 		if err != nil {
-			log.Error(fmt.Sprintf(`bdr.BDR#CreateUser(%s) %s ! %s`, dbuser, pg.IP, err))
+			log.Error(fmt.Sprintf(`bdr.BDR<%s>#CreateUser(%s) ! %s`, dbuser, err))
 			return err
 		}
 	}
@@ -77,7 +82,11 @@ func (b *BDR) CreateUser(dbuser, dbpass string) (err error) {
 }
 
 func (b *BDR) CreateDatabase(dbname, owner string) (err error) {
-	for _, pg := range PGNodes {
+	nodes, err := b.PGNodes()
+	if err != nil {
+		log.Error(fmt.Sprintf(`bdr.BDR#CreateDatabase(%s) %s ! %s`, dbname, err))
+	}
+	for _, pg := range nodes {
 		err = pg.CreateDatabase(dbname, owner)
 		if err != nil {
 			log.Error(fmt.Sprintf(`bdr.BDR<%s>#CreateDatabase(%s,%s) %s ! %s`, pg.IP, dbname, owner, err))
@@ -86,16 +95,20 @@ func (b *BDR) CreateDatabase(dbname, owner string) (err error) {
 	}
 	if err != nil {
 		// Cleanup in BDR currently requires droping the database and trying again...
-		DropDatabase(dbname)
+		b.DropDatabase(dbname)
 	}
 	return
 }
 
 func (b *BDR) CreateExtensions(dbname string, exts []string) (err error) {
-	for _, pg := range PGNodes {
+	nodes, err := b.PGNodes()
+	if err != nil {
+		log.Error(fmt.Sprintf(`bdr.BDR#CreateExtensions(%s) %+v ! %s`, exts, err))
+	}
+	for _, pg := range nodes {
 		err = pg.CreateExtensions(dbname, exts)
 		if err != nil {
-			log.Error(fmt.Sprintf(`bdr.BDR<%s>#CreateExtensions(%s) %s ! %s`, pg.IP, dbname, ext, err))
+			log.Error(fmt.Sprintf(`bdr.BDR<%s>#CreateExtensions(%s) %+v ! %s`, pg.IP, dbname, exts, err))
 			break
 		}
 	}
@@ -103,14 +116,18 @@ func (b *BDR) CreateExtensions(dbname string, exts []string) (err error) {
 }
 
 func (b *BDR) CreateReplicationGroup(dbname string) (err error) {
-	hosts := PGNodes
-	// TODO: Drop Database on all hosts if err != nil for any operation below
-	for index, pg := range hosts {
+	nodes, err := b.PGNodes()
+	if err != nil {
+		log.Error(fmt.Sprintf(`bdr.BDR#CreateReplicationGroup(%s) ! %s`, dbname, err))
+	}
+
+	// TODO: Drop Database on all nodes if err != nil for any operation below
+	for index, pg := range nodes {
 		group := fmt.Sprintf("%s", pg.IP)
 		if index == 0 {
 			err = pg.BDRGroupCreate(group, dbname)
 		} else {
-			err = pg.BDRGroupJoin(group, dbname, hosts[0])
+			err = pg.BDRGroupJoin(group, dbname, nodes[0])
 		}
 		if err != nil {
 			log.Error(fmt.Sprintf(`bdr.BDR<%s>#CreateExtensions(%s) ! %s`, pg.IP, dbname, err))
@@ -119,17 +136,20 @@ func (b *BDR) CreateReplicationGroup(dbname string) (err error) {
 	}
 	if err != nil {
 		// Cleanup in BDR currently requires droping the database and trying again...
-		DropDatabase(dbname)
+		b.DropDatabase(dbname)
 	}
 	return err
 }
 
 // Disable all usage of database.
 func (b *BDR) DisableDatabase(dbname string) (err error) {
-	hosts := PGNodes
-	for i := len(hosts) - 1; i >= 0; i-- {
-		pg := hosts[i]
-		err := pg.PGDisableDatabase(dbname)
+	nodes, err := b.PGNodes()
+	if err != nil {
+		log.Error(fmt.Sprintf(`bdr.BDR#DisableDatabase(%s) ! %s`, dbname, err))
+	}
+	for i := len(nodes) - 1; i >= 0; i-- {
+		pg := nodes[i]
+		err := pg.DisableDatabase(dbname)
 		if err != nil {
 			log.Error(fmt.Sprintf("bdr.BDR<%s>#DisableDatabase(%s) ! %s", pg.IP, dbname, err))
 			return err
@@ -144,11 +164,15 @@ func (b *BDR) BackupDatabase(dbname string) (err error) {
 }
 
 func (b *BDR) DropDatabase(dbname string) (err error) {
-	hosts := PGNodes
-	pg := hosts[i]
-	for i := len(hosts) - 1; i >= 0; i-- {
+	nodes, err := b.PGNodes()
+	if err != nil {
+		log.Error(fmt.Sprintf(`bdr.BDR#DropDatabase(%s) ! %s`, dbname, err))
+	}
+
+	for i := len(nodes) - 1; i >= 0; i-- {
+		pg := nodes[i]
 		pg.Set(`database`, `postgres`)
-		err = pg.PGDropDatabase(dbname)
+		err = pg.DropDatabase(dbname)
 		if err != nil {
 			log.Error(fmt.Sprintf("bdr.BDR<%s>#DropDatabase(%s) ! %s", pg.IP, dbname, err))
 		}
@@ -157,10 +181,13 @@ func (b *BDR) DropDatabase(dbname string) (err error) {
 }
 
 func (b *BDR) DropUser(dbuser string) (err error) {
-	hosts := PGNodes
-	for i := len(hosts) - 1; i >= 0; i-- {
-		pg := hosts[i]
-		err = pg.PGDropUser(dbuser)
+	nodes, err := b.PGNodes()
+	if err != nil {
+		log.Error(fmt.Sprintf(`bdr.BDR#DropUser(%s) ! %s`, dbuser, err))
+	}
+	for i := len(nodes) - 1; i >= 0; i-- {
+		pg := nodes[i]
+		err = pg.DropUser(dbuser)
 		if err != nil {
 			log.Error(fmt.Sprintf("bdr.BDR<%s>#DropUser(%s) ! %s", pg.IP, dbuser, err))
 		}
@@ -170,9 +197,13 @@ func (b *BDR) DropUser(dbuser string) (err error) {
 
 // Stop replication for given database (bdr replication group) and delete the grop on each node.
 func (b *BDR) DeleteReplicationGroup(dbname string) (err error) {
-	hosts := PGNodes
-	for i := len(hosts) - 1; i >= 0; i-- {
-		pg := hosts[i]
+	nodes, err := b.PGNodes()
+	if err != nil {
+		log.Error(fmt.Sprintf(`bdr.BDR#DeleteReplicationGroup(%s) ! %s`, dbname, err))
+	}
+
+	for i := len(nodes) - 1; i >= 0; i-- {
+		//pg := nodes[i]
 		//pg.Set(`database`, `postgres`)
 		//db, err := pg.Connect()
 		//if err != nil {

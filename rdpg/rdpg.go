@@ -18,10 +18,10 @@ var (
 )
 
 type RDPG struct {
-	Datacenter string
-	IP         string
-	URI        string
-	DB         *sqlx.DB
+	ClusterID string
+	IP        string
+	URI       string
+	DB        *sqlx.DB
 }
 
 func init() {
@@ -45,7 +45,7 @@ func NewRDPG() (r *RDPG) {
 	agent := client.Agent()
 	info, err := agent.Self()
 
-	r.Datacenter = info["Config"]["Datacenter"].(string)
+	r.ClusterID = info["Config"]["Datacenter"].(string)
 	r.IP = info["Config"]["AdvertiseAddr"].(string)
 
 	return
@@ -122,7 +122,7 @@ func CallAdminAPI(ip, method, path string) (err error) {
 }
 
 func (r *RDPG) Bootstrap() (err error) {
-	key := fmt.Sprintf("rdpg/%s/bootstrap", r.Datacenter)
+	key := fmt.Sprintf("rdpg/%s/bootstrap", r.ClusterID)
 	client, _ := consulapi.NewClient(consulapi.DefaultConfig())
 	lock, err := client.LockKey(key)
 	if err != nil {
@@ -154,17 +154,15 @@ func (r *RDPG) Bootstrap() (err error) {
 	return
 }
 
-func Datacenters() (datacenters []string, err error) {
+func Clusters() (clusters []string, err error) {
 	client, err := consulapi.NewClient(consulapi.DefaultConfig())
 	if err != nil {
 		return
 	}
-	agent := client.Agent()
-	info, err := agent.Self()
+	catalog := client.Catalog()
+	clusters, err = catalog.Datacenters()
 	if err != nil {
 		return
 	}
-	catalog := client.Catalog()
-	datacenters, err = catalog.Datacenters()
 	return
 }

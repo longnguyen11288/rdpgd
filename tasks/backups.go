@@ -2,7 +2,7 @@ package tasks
 
 func BackupDatabase(data string) (err error) {
 	//r := rdpg.NewRDPG()
-	//key := fmt.Sprintf("rdpg/%s/work/database/%s/backup", r.Datacenter,data)
+	//key := fmt.Sprintf("rdpg/%s/work/database/%s/backup", r.ClusterID,data)
 	//client, _ := api.NewClient(api.DefaultConfig())
 	//lock, err := client.LockKey()
 	//if err != nil {
@@ -42,7 +42,7 @@ func BackupDatabase(data string) (err error) {
 
 func BackupAllDatabases(data string) (err error) {
 	//r := rdpg.NewRDPG()
-	//key := fmt.Sprintf("rdpg/%s/work/databases/backup", r.Datacenter,data)
+	//key := fmt.Sprintf("rdpg/%s/work/databases/backup", r.ClusterID,data)
 	//client, _ := api.NewClient(api.DefaultConfig())
 	//lock, err := client.LockKey()
 	//if err != nil {

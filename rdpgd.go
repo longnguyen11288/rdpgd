@@ -91,22 +91,25 @@ func usage() {
 	`)
 }
 
-func manager() error {
+func manager() (err error) {
 	go cfsbapi.Listen()
-	go tasks.Schedule()
+	go tasks.Scheduler()
 	go tasks.Work()
 	adminapi.Listen()
+	return
 }
 
-func service() error {
-	go tasks.Schedule()
+func service() (err error) {
+	go tasks.Scheduler()
 	go tasks.Work()
 	adminapi.Listen()
+	return
 }
 
-func bootstrap() error {
+func bootstrap() (err error) {
 	r := rdpg.NewRDPG()
 	r.Bootstrap()
+	return
 }
 
 func writePidFile() {
@@ -119,9 +122,10 @@ func writePidFile() {
 			os.Exit(1)
 		}
 	}
+	return
 }
 
-func signalHandler() error {
+func signalHandler() (err error) {
 	ch := make(chan os.Signal, 1)
 	signal.Notify(ch, os.Interrupt, syscall.SIGTERM)
 	for sig := range ch {
@@ -134,4 +138,5 @@ func signalHandler() error {
 		}
 		os.Exit(0)
 	}
+	return
 }

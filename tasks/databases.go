@@ -13,16 +13,21 @@ import (
 	"github.com/wayneeseguin/rdpgd/uuid"
 )
 
-// Create Database as a background task in advance of being requested.
-func CreateDatabase(data string) (err error) {
+// Pre-Create Database as a background task in advance of being requested.
+func PrecreateDatabase(data string) (err error) {
+	// Data is the cluster id (consul datacenter)
 	// For now we assume data is simply the database name.
-	b := bdr.NewBDR()
+	dc := data
+	b := bdr.NewBDR(dc)
 
 	re := regexp.MustCompile("[^A-Za-z0-9_]")
-	identifier := strings.ToLower(string(re.ReplaceAll(uuid.NewUUID(), []byte(""))))
-	dbpass := strings.ToLower(string(re.ReplaceAll(uuid.NewUUID(), []byte(""))))
 
-	i = &cfsbapi.Instance{
+	u1 := uuid.NewUUID().String()
+	u2 := uuid.NewUUID().String()
+	identifier := strings.ToLower(string(re.ReplaceAll([]byte(u1), []byte(""))))
+	dbpass := strings.ToLower(string(re.ReplaceAll([]byte(u2), []byte(""))))
+
+	i := &cfsbapi.Instance{
 		Database: "d" + identifier,
 		User:     "u" + identifier,
 		Pass:     dbpass,
@@ -70,9 +75,9 @@ func CreateDatabase(data string) (err error) {
 func RemoveDatabase(data string) (err error) {
 	// For now we assume data is simply the database name.
 	r := rdpg.NewRDPG()
-	key := fmt.Sprintf("rdpg/%s/work/databases/remove", r.Datacenter)
+	key := fmt.Sprintf("rdpg/%s/work/databases/remove", r.ClusterID)
 	client, _ := api.NewClient(api.DefaultConfig())
-	lock, err := client.LockKey()
+	lock, err := client.LockKey(key)
 	if err != nil {
 		log.Error(fmt.Sprintf("worker.RemoveDatabase() Error aquiring lock ! %s", err))
 		return
@@ -88,7 +93,6 @@ func RemoveDatabase(data string) (err error) {
 	}
 	log.Trace(fmt.Sprintf("worker.RemoveDatabase() > Leader."))
 
-	r := rdpg.NewRDPG()
 	ids := []string{}
 	sq := fmt.Sprintf(`SELECT instance_id from cfsbapi.instances WHERE ineffective_at IS NOT NULL AND ineffective_at < CURRENT_TIMESTAMP AND decommissioned_at IS NULL`)
 	err = r.DB.Select(&ids, sq)
@@ -97,6 +101,12 @@ func RemoveDatabase(data string) (err error) {
 	}
 
 	for _, id := range ids {
+
+		// TODO: Find cluster datacenter that instance is on.... then create NEWBDR
+		// for that cluster:
+		uri := "postgres://"
+		b := bdr.NewBDR(uri)
+
 		i, err := cfsbapi.FindInstance(id)
 		if err != nil {
 			log.Error(fmt.Sprintf("worker.RemoveDatabase(%s) FindingInstance(%s) ! %s", i.Database, i.InstanceId, err))
@@ -104,14 +114,14 @@ func RemoveDatabase(data string) (err error) {
 			continue
 		}
 
-		err = r.DisableDatabase(i.Database)
+		err = b.DisableDatabase(i.Database)
 		if err != nil {
 			log.Error(fmt.Sprintf("worker.RemoveDatabase() DisableDatabase(%s) for %s ! %s", i.Database, i.InstanceId, err))
 			r.DB.Close()
 			continue
 		}
 
-		err = r.BackupDatabase(i.Database)
+		err = b.BackupDatabase(i.Database)
 		if err != nil {
 			log.Error(fmt.Sprintf("worker.RemoveDatabase() BackupDatabase(%s) ! %s", i.Database, err))
 			r.DB.Close()
@@ -119,21 +129,21 @@ func RemoveDatabase(data string) (err error) {
 		}
 
 		// Question, do we need to "stop" the replication group before dropping the database?
-		err = r.DropDatabase(i.Database)
+		err = b.DropDatabase(i.Database)
 		if err != nil {
 			log.Error(fmt.Sprintf("worker.RemoveDatabase() DropDatabase(%s) for %s ! %s", i.Database, i.InstanceId, err))
 			r.DB.Close()
 			continue
 		}
 
-		err = r.DropUser(i.User)
+		err = b.DropUser(i.User)
 		if err != nil {
 			log.Error(fmt.Sprintf("worker.RemoveDatabase() DropUser(%s) for %s ! %s", i.User, i.InstanceId, err))
 			r.DB.Close()
 			continue
 		}
 
-		err = r.DropDatabase(i.Database)
+		err = b.DropDatabase(i.Database)
 		if err != nil {
 			log.Error(fmt.Sprintf("worker.RemoveDatabase() DropDatabase(%s) for %s ! %s", i.Database, i.InstanceId, err))
 			r.DB.Close()

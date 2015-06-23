@@ -114,16 +114,16 @@ func (i *Instance) Provision() (err error) {
 	//      min(# assigned for each cluster), then targeting this cluster:
 	// TODO: Take into account plan with the above calculation, eg. dedicated vs shared
 	for { // In case we need to wait for a precreated database on the cluster...
-		log.Trace(fmt.Trace(`Querying for a pre-created instance...`))
+		log.Trace(fmt.Sprintf(`Querying for a pre-created instance...`))
 		sq := `SELECT id FROM cfsbapi.instances WHERE instance_id IS NULL LIMIT 1;`
-		_, err = r.DB.Get(&id, sq)
+		err = r.DB.Get(&id, sq)
 		if err != nil {
 			log.Error(fmt.Sprintf("cfsbapi.Instance#Provision(%s) ! %s", i.InstanceId, err))
 			return
 		}
-		log.Trace(fmt.Trace(`cfsbapi.Instance#Provision(%s) > Attempting to lock instance %s.`, id))
+		log.Trace(fmt.Sprintf(`cfsbapi.Instance#Provision(%s) > Attempting to lock instance %s.`, id))
 
-		i.Id = id
+		i.Id = string(id)
 
 		err = i.Lock()
 		if err != nil {
@@ -165,23 +165,36 @@ func (i *Instance) Remove() (err error) {
 	}
 	time.Sleep(1) // Wait for the update to propigate to the other hosts.
 
-	// TODO: For the target cluster's Service Nodes...
-	for _, host := range r.Hosts() {
-		err := host.AdminAPI("PUT", "services/pgbouncer/configure")
+	// TODO: For the target cluster's Service Nodes... ClusterID
+	// TODO: locate datacenter that instance is on then:
+	dc := "rdpg_cluster_a"
+	cluster, err := rdpg.NewCluster(dc)
+	if err != nil {
+		log.Error(fmt.Sprintf(`cfsbapi.Instance#ExternalDNS(%s) ! %s`, err))
+	}
+	for _, node := range cluster.Nodes {
+		err := rdpg.CallAdminAPI(node.PG.IP, "PUT", "services/pgbouncer/configure")
 		if err != nil {
-			log.Error(fmt.Sprintf(`Instance#Provision(%s) %s ! %s`, i.InstanceId, host.IP, err))
+			log.Error(fmt.Sprintf(`Instance<%s>#Provision(%s) ! %s`, node.PG.IP, i.InstanceId, err))
 		}
 	}
 	return
 }
 
 func (i *Instance) ExternalDNS() (dns string) {
-	// TODO: Figure out where we'll store and retrieve the external DNS information
 	r := rdpg.NewRDPG()
-	// TODO: For the target cluster's Service Nodes...
-	hosts := r.Hosts()
-	// TODO: Import the external DNS host via env variable configuration.
-	return hosts[0].IP + ":5432"
+	cluster, err := rdpg.NewCluster(r.ClusterID)
+	if err != nil {
+		log.Error(fmt.Sprintf(`cfsbapi.Instance#ExternalDNS(%s) ! %s`, err))
+	}
+	node, err := cluster.WriteMaster()
+	if err != nil {
+		log.Error(fmt.Sprintf(`cfsbapi.Instance#ExternalDNS(%s) ! %s`, err))
+	}
+
+	// TODO: Figure out where we'll store and retrieve the external DNS information instead of IP
+
+	return node.PG.IP + ":5432"
 }
 
 func (i *Instance) URI() (uri string) {
@@ -226,12 +239,13 @@ func Instances() (si []Instance, err error) {
 }
 
 func Remove() (err error) {
+	return
 }
 
 func (i *Instance) Lock() (err error) {
 	// Acquire consul schedulerLock to aquire right to schedule tasks.
 	r := rdpg.NewRDPG()
-	key := fmt.Sprintf("rdpg/%s/cfsb/instance/id/%s", r.Datacenter, i.Id)
+	key := fmt.Sprintf("rdpg/%s/cfsb/instance/id/%s", r.ClusterID, i.Id)
 	client, _ := consulapi.NewClient(consulapi.DefaultConfig())
 	i.lock, err = client.LockKey(key)
 	if err != nil {
@@ -245,7 +259,7 @@ func (i *Instance) Lock() (err error) {
 		return
 	}
 
-	if lockCh == nil {
+	if i.lockCh == nil {
 		err = fmt.Errorf(`Scheduler Lock not aquired.`)
 	}
 	return

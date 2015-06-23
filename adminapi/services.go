@@ -39,7 +39,15 @@ func (s *Service) Configure() (err error) {
 		}
 
 		r := rdpg.NewRDPG()
-		hosts := r.Hosts()
+		cluster, err := rdpg.NewCluster(r.ClusterID)
+		if err != nil {
+			log.Error(fmt.Sprintf(`cfsbapi.Instance#ExternalDNS(%s) ! %s`, err))
+		}
+		node, err := cluster.WriteMaster()
+		if err != nil {
+			log.Error(fmt.Sprintf(`cfsbapi.Instance#ExternalDNS(%s) ! %s`, err))
+		}
+
 		// TODO: 5432 & 6432 from environmental configuration.
 		// TODO: Should this list come from active Consul registered hosts instead?
 		footer := fmt.Sprintf(`
@@ -51,7 +59,7 @@ bind 0.0.0.0:5432
 backend pgbdr_write_master
   mode tcp
 	server master %s:6432 check
-	`, hosts[0].IP)
+	`, node.PG.IP)
 
 		hc := []string{string(header), footer}
 		err = ioutil.WriteFile(`/var/vcap/jobs/haproxy/config/haproxy.cfg`, []byte(strings.Join(hc, "\n")), 0640)
@@ -119,21 +127,24 @@ backend pgbdr_write_master
 	case "pgbdr":
 		// Add pg_hba.conf lines for the current datacenter cluster
 		r := rdpg.NewRDPG()
-		cluster, err := rdpg.NewCluster(r.Datacenter)
+		cluster, err := rdpg.NewCluster(r.ClusterID)
 		if err != nil {
 			// do something, yeah I'm tired
 		}
-		hba, err := ioutil.ReadFile(`/var/vcap/jobs/pgbdr/config/pg_hba.conf`)
+		hbaHeader, err := ioutil.ReadFile(`/var/vcap/jobs/pgbdr/config/pg_hba.conf`)
 		if err != nil {
 			log.Error(fmt.Sprintf("adminapi#Service.Configure(%s) ! %s", s.Name, err))
 			return err
 		}
+		hba := []string{string(hbaHeader)}
 
 		for _, node := range cluster.Nodes {
-			hba += fmt.Sprintf(`host    replication   postgres %s/32  trust\n`, node.PG.IP)
-			hba += fmt.Sprintf(`host    all           postgres %s/32  trust\n`, node.PG.IP)
+			hba = append(hba, fmt.Sprintf(`host    replication   postgres %s/32  trust\n`, node.PG.IP))
+			hba = append(hba, fmt.Sprintf(`host    all           postgres %s/32  trust\n`, node.PG.IP))
 		}
-		err = ioutil.WriteFile(`/var/vcap/store/pgbdr/data/pg_hba.conf`, []byte(hba), 0640)
+		hba = append(hba, "")
+
+		err = ioutil.WriteFile(`/var/vcap/store/pgbdr/data/pg_hba.conf`, []byte(strings.Join(hba, "\n")), 0640)
 		if err != nil {
 			log.Error(fmt.Sprintf("adminapi#Service.Configure(%s) ! %s", s.Name, err))
 			return err
