@@ -43,17 +43,18 @@ Interval + start_at clock time of day
 func Scheduler() {
 	scheduler := Scheduler{}
 
+	r := rdpg.NewRDPG()
+	err = r.OpenDB("rdpg")
+	if err != nil {
+		log.Error(fmt.Sprintf(`tasks.Scheduler() Opening rdpg database ! %s`, err))
+		Unlock()
+		continue
+	}
+	defer r.DB.Close()
+
 	for {
 		err := ScheculerLock()
 		if err != nil {
-			continue
-		}
-
-		r := rdpg.NewRDPG()
-		err = r.OpenDB("rdpg")
-		if err != nil {
-			log.Error(fmt.Sprintf(`tasks.Scheduler() Opening rdpg database ! %s`, err))
-			Unlock()
 			continue
 		}
 

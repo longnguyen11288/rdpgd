@@ -63,6 +63,8 @@ func (t *Task) Enqueue() (err error) {
 	if err != nil {
 		log.Error(fmt.Sprintf(`tasks.Enqueue() Opening rdpg database ! %s`, err))
 	}
+	defer r.DB.Close()
+
 	sq := fmt.Sprintf(`INSERT INTO tasks.tasks(task_id,action,data,ttl) VALUES ('%s','%s','%s','%s');`, t.TaskId, t.Action, t.Data, t.TTL)
 	_, err = r.DB.Exec(sq)
 	if err != nil {
@@ -85,6 +87,7 @@ func (t *Task) Dequeue() (err error) {
 		log.Error(fmt.Sprintf(`tasks.Dequeue() Opening rdpg database ! %s`, err))
 		return
 	}
+	defer r.DB.Close()
 
 	sq := fmt.Sprintf(`SELECT task_id,action,data,ttl FROM tasks.tasks WHERE task_id = '%s' LIMIT 1;`, t.TaskId)
 	err = r.DB.Select(&t, sq)

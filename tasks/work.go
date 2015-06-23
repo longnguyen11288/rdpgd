@@ -10,13 +10,14 @@ import (
 )
 
 func Work() {
-	for {
-		r := rdpg.NewRDPG()
-		err := r.OpenDB("rdpg")
-		if err != nil {
-			log.Error(fmt.Sprintf(`tasks.Work() Error opening rdpg database ! %s`, err))
-		}
+	r := rdpg.NewRDPG()
+	err := r.OpenDB("rdpg")
+	if err != nil {
+		log.Error(fmt.Sprintf(`tasks.Work() Error opening rdpg database ! %s`, err))
+	}
+	defer r.DB.Close()
 
+	for {
 		// TODO: only work for my role type: write vs read
 		// eg. WHERE role = 'read'
 		tasks := []tasks.Task{}
@@ -66,5 +67,6 @@ func Work() {
 		}
 
 		time.Sleep(1 * time.Second)
+
 	}
 }
