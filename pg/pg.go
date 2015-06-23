@@ -21,17 +21,17 @@ type PG struct {
 }
 
 // Create and return a new PG using default parameters
-func NewPG(host, port, user, database string) (h PG) {
-	h = PG{IP: host, Port: port, User: user, Database: database}
+func NewPG(host, port, user, database string) (p PG) {
+	p = PG{IP: host, Port: port, User: user, Database: database}
 	return
 }
 
 // Check if the given PostgreSQL User Exists on the host.
-func (h *PG) PGUserExists(dbuser string) (exists bool, err error) {
-	h.Set(`database`, `postgres`)
-	db, err := h.PGConnect()
+func (p *PG) UserExists(dbuser string) (exists bool, err error) {
+	p.Set(`database`, `postgres`)
+	db, err := p.Connect()
 	if err != nil {
-		log.Error(fmt.Sprintf("pg.PG<%s>#PGUserExists(%s) %s ! %s", h.IP, dbuser, h.URI, err))
+		log.Error(fmt.Sprintf("pg.PG<%s>#UserExists(%s) %s ! %s", p.IP, dbuser, p.URI, err))
 		return
 	}
 	defer db.Close()
@@ -39,7 +39,7 @@ func (h *PG) PGUserExists(dbuser string) (exists bool, err error) {
 	var name string
 	err = db.Get(&name, `SELECT rolname FROM pg_roles WHERE rolname=? LIMIT 1;`, dbuser)
 	if err != nil {
-		log.Error(fmt.Sprintf(`pg.PG<%s>#PGUserExists(%s) ! %s`, h.IP, dbuser, err))
+		log.Error(fmt.Sprintf(`pg.PG<%s>#UserExists(%s) ! %s`, p.IP, dbuser, err))
 		return
 	}
 	if name != "" {
@@ -51,11 +51,11 @@ func (h *PG) PGUserExists(dbuser string) (exists bool, err error) {
 }
 
 // Check if the given PostgreSQL Database Exists on the host.
-func (h *PG) PGDatabaseExists(dbname string) (exists bool, err error) {
-	h.Set(`database`, `postgres`)
-	db, err := h.PGConnect()
+func (p *PG) DatabaseExists(dbname string) (exists bool, err error) {
+	p.Set(`database`, `postgres`)
+	db, err := p.Connect()
 	if err != nil {
-		log.Error(fmt.Sprintf("pg.PG<%s>#PGDatabaseExists(%s) %s ! %s", h.IP, dbname, h.URI, err))
+		log.Error(fmt.Sprintf("pg.PG<%s>#DatabaseExists(%s) %s ! %s", p.IP, dbname, p.URI, err))
 		return
 	}
 	defer db.Close()
@@ -63,7 +63,7 @@ func (h *PG) PGDatabaseExists(dbname string) (exists bool, err error) {
 	var name string
 	err = db.Get(&name, `SELECT datname FROM pg_database WHERE datname=?;`, dbname)
 	if err != nil {
-		log.Error(fmt.Sprintf(`pg.PG<%s>#PGDatabaseExists(%s) ! %s`, h.IP, dbname, err))
+		log.Error(fmt.Sprintf(`pg.PG<%s>#DatabaseExists(%s) ! %s`, p.IP, dbname, err))
 		return
 	}
 	if name != "" {
@@ -75,18 +75,18 @@ func (h *PG) PGDatabaseExists(dbname string) (exists bool, err error) {
 }
 
 // Create a given user on a single target host.
-func (h *PG) PGCreateUser(dbuser, dbpass string) (err error) {
-	h.Set(`database`, `postgres`)
-	db, err := h.PGConnect()
+func (p *PG) CreateUser(dbuser, dbpass string) (err error) {
+	p.Set(`database`, `postgres`)
+	db, err := p.Connect()
 	if err != nil {
-		log.Error(fmt.Sprintf("pg.PG<%s>#PGCreateUser(%s) %s ! %s", h.IP, dbuser, h.URI, err))
+		log.Error(fmt.Sprintf("pg.PG<%s>#CreateUser(%s) %s ! %s", p.IP, dbuser, p.URI, err))
 		return
 	}
 	defer db.Close()
 
-	exists, err := h.PGUserExists(dbuser)
+	exists, err := p.UserExists(dbuser)
 	if err != nil {
-		log.Error(fmt.Sprintf("pg.PG<%s>#CreateUser(%s) ! %s", h.IP, dbuser, err))
+		log.Error(fmt.Sprintf("pg.PG<%s>#CreateUser(%s) ! %s", p.IP, dbuser, err))
 		return
 	}
 	if exists {
@@ -95,19 +95,19 @@ func (h *PG) PGCreateUser(dbuser, dbpass string) (err error) {
 	}
 
 	sq := fmt.Sprintf(`CREATE USER %s;`, dbuser)
-	log.Trace(fmt.Sprintf(`pg.PG<%s>#CreateUser(%s) > %s`, h.IP, dbuser, sq))
+	log.Trace(fmt.Sprintf(`pg.PG<%s>#CreateUser(%s) > %s`, p.IP, dbuser, sq))
 	_, err = db.Exec(sq)
 	if err != nil {
-		log.Error(fmt.Sprintf("pg.PG<%s>#CreateUser(%s) ! %s", h.IP, dbuser, err))
+		log.Error(fmt.Sprintf("pg.PG<%s>#CreateUser(%s) ! %s", p.IP, dbuser, err))
 		db.Close()
 		return err
 	}
 
 	sq = fmt.Sprintf(`ALTER USER %s ENCRYPTED PASSWORD %s;`, dbuser, dbpass)
-	log.Trace(fmt.Sprintf(`pg.PG<%s>#PGCreateUser(%s)`, h.IP, dbuser))
+	log.Trace(fmt.Sprintf(`pg.PG<%s>#CreateUser(%s)`, p.IP, dbuser))
 	_, err = db.Exec(sq)
 	if err != nil {
-		log.Error(fmt.Sprintf(`pg.PG<%s>#PGCreateUser(%s) ! %s`, h.IP, dbuser, err))
+		log.Error(fmt.Sprintf(`pg.PG<%s>#CreateUser(%s) ! %s`, p.IP, dbuser, err))
 		return
 	}
 
@@ -115,25 +115,25 @@ func (h *PG) PGCreateUser(dbuser, dbpass string) (err error) {
 }
 
 // Create a given user on a single target host.
-func (h *PG) PGUserGrantPrivileges(dbuser string, priviliges []string) (err error) {
-	h.Set(`database`, `postgres`)
-	db, err := h.PGConnect()
+func (p *PG) UserGrantPrivileges(dbuser string, priviliges []string) (err error) {
+	p.Set(`database`, `postgres`)
+	db, err := p.Connect()
 	if err != nil {
-		log.Error(fmt.Sprintf("pg.PG<%s>#PGUserGrantPrivileges(%s) %s ! %s", h.IP, dbuser, h.URI, err))
+		log.Error(fmt.Sprintf("pg.PG<%s>#UserGrantPrivileges(%s) %s ! %s", p.IP, dbuser, p.URI, err))
 		return
 	}
 	defer db.Close()
 
 	for _, priv := range priviliges {
 		sq := fmt.Sprintf(`ALTER USER %s GRANT %s;`, dbuser, priv)
-		log.Trace(fmt.Sprintf(`pg.PG<%s>#PGUserGrantPrivileges(%s) %s > %s`, h.IP, dbuser, sq))
+		log.Trace(fmt.Sprintf(`pg.PG<%s>#UserGrantPrivileges(%s) %s > %s`, p.IP, dbuser, sq))
 		result, err := db.Exec(sq)
 		rows, _ := result.RowsAffected()
 		if rows > 0 {
-			log.Trace(fmt.Sprintf(`pg.PG<%s>#CreateUser(%s) Successfully Created.`, h.IP, dbuser))
+			log.Trace(fmt.Sprintf(`pg.PG<%s>#CreateUser(%s) Successfully Created.`, p.IP, dbuser))
 		}
 		if err != nil {
-			log.Error(fmt.Sprintf(`pg.PG<%s>#CreateUser(%s) ! %s`, h.IP, dbuser, err))
+			log.Error(fmt.Sprintf(`pg.PG<%s>#CreateUser(%s) ! %s`, p.IP, dbuser, err))
 			return err
 		}
 	}
@@ -141,67 +141,67 @@ func (h *PG) PGUserGrantPrivileges(dbuser string, priviliges []string) (err erro
 }
 
 // Create a given database owned by user on a single target host.
-func (h *PG) PGCreateDatabase(dbname, dbuser string) (err error) {
-	h.Set(`database`, `postgres`)
-	db, err := h.PGConnect()
+func (p *PG) CreateDatabase(dbname, dbuser string) (err error) {
+	p.Set(`database`, `postgres`)
+	db, err := p.Connect()
 	if err != nil {
-		log.Error(fmt.Sprintf("pg.PG<%s>#CreateDatabase(%s,%s) %s ! %s", h.IP, dbname, dbuser, h.URI, err))
+		log.Error(fmt.Sprintf("pg.PG<%s>#CreateDatabase(%s,%s) %s ! %s", p.IP, dbname, dbuser, p.URI, err))
 		return
 	}
 	defer db.Close()
 
-	exists, err := h.PGUserExists(dbuser)
+	exists, err := p.UserExists(dbuser)
 	if err != nil {
-		log.Error(fmt.Sprintf("pg.PG<%s>#CreateDatabase(%s,%s) ! %s", h.IP, dbname, dbuser, err))
+		log.Error(fmt.Sprintf("pg.PG<%s>#CreateDatabase(%s,%s) ! %s", p.IP, dbname, dbuser, err))
 		return
 	}
 	if !exists {
 		err = fmt.Errorf(`User does not exist, ensure that postgres user '%s' exists first.`, dbuser)
-		log.Error(fmt.Sprintf("pg.PG<%s>#CreateDatabase(%s,%s) ! %s", h.IP, dbname, dbuser, err))
+		log.Error(fmt.Sprintf("pg.PG<%s>#CreateDatabase(%s,%s) ! %s", p.IP, dbname, dbuser, err))
 		return
 	}
 
 	sq := fmt.Sprintf(`CREATE DATABASE %s WITH OWNER %s TEMPLATE template0 ENCODING 'UTF8'`, dbname, dbuser)
-	log.Trace(fmt.Sprintf(`pg.PG<%s>#CreateDatabase(%s,%s) > %s`, h.IP, dbname, dbuser, sq))
+	log.Trace(fmt.Sprintf(`pg.PG<%s>#CreateDatabase(%s,%s) > %s`, p.IP, dbname, dbuser, sq))
 	_, err = db.Query(sq)
 	if err != nil {
-		log.Error(fmt.Sprintf("pg.PG<%s>#CreateDatabase(%s,%s) ! %s", h.IP, dbname, dbuser, err))
+		log.Error(fmt.Sprintf("pg.PG<%s>#CreateDatabase(%s,%s) ! %s", p.IP, dbname, dbuser, err))
 		return
 	}
 
 	sq = fmt.Sprintf(`REVOKE ALL ON DATABASE "%s" FROM public`, dbname)
-	log.Trace(fmt.Sprintf(`pg.PG<%s>#CreateDatabase(%s,%s) > %s`, h.IP, dbname, dbuser, sq))
+	log.Trace(fmt.Sprintf(`pg.PG<%s>#CreateDatabase(%s,%s) > %s`, p.IP, dbname, dbuser, sq))
 	_, err = db.Exec(sq)
 	if err != nil {
-		log.Error(fmt.Sprintf("pg.PG<%s>#CreateDatabase(%s,%s) ! %s", h.IP, dbname, dbuser, err))
+		log.Error(fmt.Sprintf("pg.PG<%s>#CreateDatabase(%s,%s) ! %s", p.IP, dbname, dbuser, err))
 	}
 
 	sq = fmt.Sprintf(`GRANT ALL PRIVILEGES ON DATABASE %s TO %s`, dbname, dbuser)
-	log.Trace(fmt.Sprintf(`pg.PG<%s>#CreateDatabase(%s,%s) > %s`, h.IP, dbname, dbuser, sq))
+	log.Trace(fmt.Sprintf(`pg.PG<%s>#CreateDatabase(%s,%s) > %s`, p.IP, dbname, dbuser, sq))
 	_, err = db.Query(sq)
 	if err != nil {
-		log.Error(fmt.Sprintf("pg.PG<%s>#CreateDatabase(%s,%s) ! %s", h.IP, dbname, dbuser, err))
+		log.Error(fmt.Sprintf("pg.PG<%s>#CreateDatabase(%s,%s) ! %s", p.IP, dbname, dbuser, err))
 		return
 	}
 	return nil
 }
 
 // Create given extensions on a single target host.
-func (h *PG) PGCreateExtensions(dbname string, exts []string) (err error) {
-	h.Set(`database`, dbname)
-	db, err := h.PGConnect()
+func (p *PG) CreateExtensions(dbname string, exts []string) (err error) {
+	p.Set(`database`, dbname)
+	db, err := p.Connect()
 	if err != nil {
-		log.Error(fmt.Sprintf("pg.PG<%s>#CreateExtensions(%s) %s ! %s", h.IP, dbname, h.URI, err))
+		log.Error(fmt.Sprintf("pg.PG<%s>#CreateExtensions(%s) %s ! %s", p.IP, dbname, p.URI, err))
 		return
 	}
 
 	for _, ext := range exts {
 		sq := fmt.Sprintf(`CREATE EXTENSION IF NOT EXISTS %s;`, ext)
-		log.Trace(fmt.Sprintf(`pg.PG<%s>#CreateExtensions() > %s`, h.IP, sq))
+		log.Trace(fmt.Sprintf(`pg.PG<%s>#CreateExtensions() > %s`, p.IP, sq))
 		_, err = db.Exec(sq)
 		if err != nil {
 			db.Close()
-			log.Error(fmt.Sprintf("pg.PG<%s>#PGCreateExtension() %s ! %s", h.IP, ext, err))
+			log.Error(fmt.Sprintf("pg.PG<%s>#CreateExtension() %s ! %s", p.IP, ext, err))
 			return
 		}
 	}
@@ -209,41 +209,41 @@ func (h *PG) PGCreateExtensions(dbname string, exts []string) (err error) {
 	return
 }
 
-func (h *PG) PGDisableDatabase(dbname string) (err error) {
-	h.Set(`database`, `postgres`)
-	db, err := h.PGConnect()
+func (p *PG) DisableDatabase(dbname string) (err error) {
+	p.Set(`database`, `postgres`)
+	db, err := p.Connect()
 	if err != nil {
-		log.Error(fmt.Sprintf("pg.PG<%s>#PGDisableDatabase(%s,%s) %s ! %s", h.IP, dbname, h.URI, err))
+		log.Error(fmt.Sprintf("pg.PG<%s>#DisableDatabase(%s,%s) %s ! %s", p.IP, dbname, p.URI, err))
 		return
 	}
 	defer db.Close()
 
 	sq := fmt.Sprintf(`SELECT rdpg.bdr_disable_database('%s');`, dbname)
-	log.Trace(fmt.Sprintf(`pg.PG<%s>#PGDisableDatabase(%s) DISABLE %s > %s`, dbname, h.IP, sq))
+	log.Trace(fmt.Sprintf(`pg.PG<%s>#DisableDatabase(%s) DISABLE %s > %s`, dbname, p.IP, sq))
 	_, err = db.Exec(sq)
 	if err != nil {
-		log.Error(fmt.Sprintf("RDPG#PGDisableDatabase(%s) DISABLE %s ! %s", dbname, h.IP, err))
+		log.Error(fmt.Sprintf("p.PG#DisableDatabase(%s) DISABLE %s ! %s", dbname, p.IP, err))
 	}
 
 	return
 }
 
-func (h *PG) PGBDRGroupCreate(group, dbname string) (err error) {
-	h.Set(`database`, dbname)
-	db, err := h.PGConnect()
+func (p *PG) BDRGroupCreate(group, dbname string) (err error) {
+	p.Set(`database`, dbname)
+	db, err := p.Connect()
 	if err != nil {
 		return
 	}
 	defer db.Close()
 	sq := fmt.Sprintf(`SELECT bdr.bdr_group_create( local_node_name := '%s',
 			node_external_dsn := 'host=%s port=%s user=%s dbname=%s'); `,
-		group, h.IP, h.Port, h.User, dbname,
+		group, p.IP, p.Port, p.User, dbname,
 	)
-	log.Trace(fmt.Sprintf(`RDPG#CreateReplicationGroup(%s) %s > %s`, dbname, h.IP, sq))
+	log.Trace(fmt.Sprintf(`p.PG#CreateReplicationGroup(%s) %s > %s`, dbname, p.IP, sq))
 	_, err = db.Exec(sq)
 	if err == nil {
 		sq = `SELECT bdr.bdr_node_join_wait_for_ready();`
-		log.Trace(fmt.Sprintf(`RDPG#CreateReplicationGroup(%s) %s > %s`, dbname, h.IP, sq))
+		log.Trace(fmt.Sprintf(`p.PG#CreateReplicationGroup(%s) %s > %s`, dbname, p.IP, sq))
 		_, err = db.Exec(sq)
 	}
 	db.Close()
@@ -251,9 +251,9 @@ func (h *PG) PGBDRGroupCreate(group, dbname string) (err error) {
 	return
 }
 
-func (h *PG) PGBDRGroupJoin(group, dbname string, target PG) (err error) {
-	h.Set(`database`, dbname)
-	db, err := h.PGConnect()
+func (p *PG) BDRGroupJoin(group, dbname string, target PG) (err error) {
+	p.Set(`database`, dbname)
+	db, err := p.Connect()
 	if err != nil {
 		return
 	}
@@ -261,26 +261,26 @@ func (h *PG) PGBDRGroupJoin(group, dbname string, target PG) (err error) {
 	sq := fmt.Sprintf(`SELECT bdr.bdr_group_join( local_node_name := '%s',
 				node_external_dsn := 'host=%s port=%s user=%s dbname=%s',
 				join_using_dsn := 'host=%s port=%s user=%s dbname=%s'); `,
-		group, h.IP, h.Port, h.User, h.Database,
+		group, p.IP, p.Port, p.User, p.Database,
 		target.IP, target.Port, target.User, dbname,
 	)
-	log.Trace(fmt.Sprintf(`RDPG#CreateReplicationGroup(%s) %s > %s`, dbname, h.IP, sq))
+	log.Trace(fmt.Sprintf(`p.PG#CreateReplicationGroup(%s) %s > %s`, dbname, p.IP, sq))
 	_, err = db.Exec(sq)
 	if err == nil {
 		sq = `SELECT bdr.bdr_node_join_wait_for_ready();`
-		log.Trace(fmt.Sprintf(`RDPG#CreateReplicationGroup(%s) %s > %s`, dbname, h.IP, sq))
+		log.Trace(fmt.Sprintf(`p.PG#CreateReplicationGroup(%s) %s > %s`, dbname, p.IP, sq))
 		_, err = db.Exec(sq)
 	}
 	db.Close()
 	return
 }
 
-func (h *PG) PGStopReplication(dbname string) (err error) {
+func (p *PG) StopReplication(dbname string) (err error) {
 	// TODO Finish this function
-	h.Set(`database`, `postgres`)
-	db, err := h.PGConnect()
+	p.Set(`database`, `postgres`)
+	db, err := p.Connect()
 	if err != nil {
-		log.Error(fmt.Sprintf("pg.PG<%s>#PGDropDatabase(%s) %s ! %s", h.IP, dbname, h.URI, err))
+		log.Error(fmt.Sprintf("pg.PG<%s>#DropDatabase(%s) %s ! %s", p.IP, dbname, p.URI, err))
 		return
 	}
 	// sq := fmt.Sprintf(SELECT slot_name FROM pg_replication_slots WHERE database='%s',dbname);
@@ -290,61 +290,61 @@ func (h *PG) PGStopReplication(dbname string) (err error) {
 	return
 }
 
-func (h *PG) PGDropDatabase(dbname string) (err error) {
-	h.Set(`database`, `postgres`)
-	db, err := h.PGConnect()
+func (p *PG) DropDatabase(dbname string) (err error) {
+	p.Set(`database`, `postgres`)
+	db, err := p.Connect()
 	if err != nil {
-		log.Error(fmt.Sprintf("pg.PG<%s>#PGDropDatabase(%s) %s ! %s", h.IP, dbname, h.URI, err))
+		log.Error(fmt.Sprintf("pg.PG<%s>#DropDatabase(%s) %s ! %s", p.IP, dbname, p.URI, err))
 		return
 	}
 	defer db.Close()
 
-	exists, err := h.PGDatabaseExists(dbname)
+	exists, err := p.DatabaseExists(dbname)
 	if err != nil {
-		log.Error(fmt.Sprintf("pg.PG<%s>#PGDropDatabase(%s) ! %s", h.IP, dbname, err))
+		log.Error(fmt.Sprintf("pg.PG<%s>#DropDatabase(%s) ! %s", p.IP, dbname, err))
 		return
 	}
 	if !exists {
-		log.Error(fmt.Sprintf("pg.PG<%s>#PGDropDatabase(%s) Database %s already does not exist.", h.IP, dbname, err))
+		log.Error(fmt.Sprintf("pg.PG<%s>#DropDatabase(%s) Database %s already does not exist.", p.IP, dbname, err))
 		return
 	}
 
 	// TODO: How do we drop a database in bdr properly?
 	sq := fmt.Sprintf(`DROP DATABASE IF EXISTS %s`, dbname)
-	log.Trace(fmt.Sprintf(`RDPG#DropDatabase(%s) %s DROP > %s`, dbname, h.IP, sq))
+	log.Trace(fmt.Sprintf(`p.PG#DropDatabase(%s) %s DROP > %s`, dbname, p.IP, sq))
 	_, err = db.Exec(sq)
 	if err != nil {
-		log.Error(fmt.Sprintf("RDPG#DropDatabase(%s) DROP %s ! %s", dbname, h.IP, err))
+		log.Error(fmt.Sprintf("p.PG#DropDatabase(%s) DROP %s ! %s", dbname, p.IP, err))
 		return
 	}
 	return
 }
 
-func (h *PG) PGDropUser(dbuser string) (err error) {
-	h.Set(`database`, `postgres`)
-	db, err := h.PGConnect()
+func (p *PG) DropUser(dbuser string) (err error) {
+	p.Set(`database`, `postgres`)
+	db, err := p.Connect()
 	if err != nil {
-		log.Error(fmt.Sprintf("pg.PG<%s>#PGDropUser(%s) %s ! %s", h.IP, dbuser, h.URI, err))
+		log.Error(fmt.Sprintf("pg.PG<%s>#DropUser(%s) %s ! %s", p.IP, dbuser, p.URI, err))
 		return
 	}
 	defer db.Close()
 
-	exists, err := h.PGUserExists(dbuser)
+	exists, err := p.UserExists(dbuser)
 	if err != nil {
-		log.Error(fmt.Sprintf("pg.PG<%s>#PGDropUser(%s) ! %s", h.IP, dbuser, err))
+		log.Error(fmt.Sprintf("pg.PG<%s>#DropUser(%s) ! %s", p.IP, dbuser, err))
 		return
 	}
 	if !exists {
-		log.Error(fmt.Sprintf("pg.PG<%s>#PGDropUser(%s) User %s already does not exist.", h.IP, dbuser, err))
+		log.Error(fmt.Sprintf("pg.PG<%s>#DropUser(%s) User %s already does not exist.", p.IP, dbuser, err))
 		return
 	}
 
 	// TODO: How do we drop a database in bdr properly?
 	sq := fmt.Sprintf(`DROP USER %s`, dbuser)
-	log.Trace(fmt.Sprintf(`RDPG#DropDatabase(%s) %s DROP > %s`, dbuser, h.IP, sq))
+	log.Trace(fmt.Sprintf(`p.PG#DropDatabase(%s) %s DROP > %s`, dbuser, p.IP, sq))
 	_, err = db.Exec(sq)
 	if err != nil {
-		log.Error(fmt.Sprintf("RDPG#DropDatabase(%s) DROP %s ! %s", dbuser, h.IP, err))
+		log.Error(fmt.Sprintf("p.PG#DropDatabase(%s) DROP %s ! %s", dbuser, p.IP, err))
 		return
 	}
 
@@ -352,50 +352,50 @@ func (h *PG) PGDropUser(dbuser string) (err error) {
 }
 
 // Set host property to given value then regenerate the URI and DSN properties.
-func (h *PG) Set(key, value string) (err error) {
+func (p *PG) Set(key, value string) (err error) {
 	switch key {
 	case "ip":
-		h.IP = value
+		p.IP = value
 	case "port":
-		h.Port = value
+		p.Port = value
 	case "user":
-		h.User = value
+		p.User = value
 	case "database":
-		h.Database = value
+		p.Database = value
 	case "connect_timeout":
-		h.ConnectTimeout = value
+		p.ConnectTimeout = value
 	case "sslmode":
-		h.SSLMode = value
+		p.SSLMode = value
 	case "pass":
 	case "default": // A Bug
-		err = fmt.Errorf(`Attempt to set unknown key %s to value %s for host %+v.`, key, value, *h)
+		err = fmt.Errorf(`Attempt to set unknown key %s to value %s for host %+v.`, key, value, *p)
 		return err
 	}
-	h.pgURI()
-	h.pgDSN()
+	p.pgURI()
+	p.pgDSN()
 
 	return
 }
 
 // Build and set the host's URI property
-func (h *PG) pgURI() {
+func (p *PG) pgURI() {
 	d := `postgres://%s@%s:%s/%s?fallback_application_name=%s&connect_timeout=%s&sslmode=%s`
-	h.URI = fmt.Sprintf(d, h.User, h.IP, h.Port, h.Database, `rdpg`, `5`, `disable`)
+	p.URI = fmt.Sprintf(d, p.User, p.IP, p.Port, p.Database, `rdpg`, `5`, `disable`)
 	return
 }
 
 // Build and set the host's DSN property
-func (h *PG) pgDSN() {
+func (p *PG) pgDSN() {
 	d := `user=%s host=%s port=%s dbname=%s fallback_application_name=%s connect_timeout=%s sslmode=%s`
-	h.DSN = fmt.Sprintf(d, h.User, h.IP, h.Port, h.Database, `rdpg`, `5`, `disable`)
+	p.DSN = fmt.Sprintf(d, p.User, p.IP, p.Port, p.Database, `rdpg`, `5`, `disable`)
 	return
 }
 
 // Connect to the host's database and return database connection object if successful
-func (h *PG) PGConnect() (db *sqlx.DB, err error) {
-	db, err = sqlx.Connect(`postgres`, h.URI)
+func (p *PG) Connect() (db *sqlx.DB, err error) {
+	db, err = sqlx.Connect(`postgres`, p.URI)
 	if err != nil {
-		log.Error(fmt.Sprintf(`pg.PG<%s>#Connect() %s ! %s`, h.IP, h.URI, err))
+		log.Error(fmt.Sprintf(`pg.PG<%s>#Connect() %s ! %s`, p.IP, p.URI, err))
 		return db, err
 	}
 	return db, nil

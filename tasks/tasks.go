@@ -34,8 +34,9 @@ func NewTask() *Task {
 // Attempt to obtain a consul Lock, return err if lock if fail to obtain lock.
 func (t *Task) Lock() (err error) {
 	client, _ := consulapi.NewClient(consulapi.DefaultConfig())
-	// TODO: Add ClusterID to task locking
-	t.lock, err = client.LockKey(fmt.Sprintf("rdpg/clusterId/tasks/%s", t.TaskId))
+	r := rdpg.NewRDPG()
+	key := fmt.Sprintf("rdpg/%s/tasks/%s", r.Datacenter, t.TaskId)
+	t.lock, err = client.LockKey(key)
 	if err != nil {
 		log.Error(fmt.Sprintf("tasks.Lock() Error aquiring lock for task %s ! %s", t.TaskId, err))
 		return

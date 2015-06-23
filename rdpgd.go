@@ -105,13 +105,14 @@ func service() error {
 }
 
 func bootstrap() error {
-	rdpg.Bootstrap()
+	r := rdpg.NewRDPG()
+	r.Bootstrap()
 }
 
 func writePidFile() {
 	if pidFile != "" {
 		pid := os.Getpid()
-		log.Trace(fmt.Sprintf("main.writePidFile() Writing pid %d to %s", pid, pidFile))
+		log.Trace(fmt.Sprintf(`main.writePidFile() Writing pid %d to %s`, pid, pidFile))
 		err := ioutil.WriteFile(pidFile, []byte(strconv.Itoa(pid)), 0644)
 		if err != nil {
 			log.Error(fmt.Sprintf(`main.writePidFile() Error while writing pid '%d' to '%s' :: %s`, pid, pidFile, err))
@@ -124,7 +125,7 @@ func signalHandler() error {
 	ch := make(chan os.Signal, 1)
 	signal.Notify(ch, os.Interrupt, syscall.SIGTERM)
 	for sig := range ch {
-		log.Info(fmt.Sprintf("main.signalHandler() Received signal %v, shutting down...", sig))
+		log.Info(fmt.Sprintf("main.signalHandler() Received signal %v, shutting down gracefully...", sig))
 		if _, err := os.Stat(pidFile); err == nil {
 			if err := os.Remove(pidFile); err != nil {
 				log.Error(err.Error())

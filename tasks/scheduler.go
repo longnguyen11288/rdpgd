@@ -91,8 +91,8 @@ func NewSchedule() (s *Schedule) {
 
 func SchedulerLock() (err error) {
 	// Acquire consul schedulerLock to aquire right to schedule tasks.
-	// TODO: Add ClusterId to the key:
-	key := "rdpg/clusterId/tasks/scheduler"
+	r := rdpg.NewRDPG()
+	key := fmt.Sprintf("rdpg/%s/tasks/scheduler", r.Datacenter)
 	client, _ := consulapi.NewClient(consulapi.DefaultConfig())
 	lock, err = client.LockKey(key)
 	if err != nil {

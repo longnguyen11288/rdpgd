@@ -69,8 +69,10 @@ func CreateDatabase(data string) (err error) {
 // TODO: This should be remove database
 func RemoveDatabase(data string) (err error) {
 	// For now we assume data is simply the database name.
+	r := rdpg.NewRDPG()
+	key := fmt.Sprintf("rdpg/%s/work/databases/remove", r.Datacenter)
 	client, _ := api.NewClient(api.DefaultConfig())
-	lock, err := client.LockKey("rdpg/work/databases/remove/lock")
+	lock, err := client.LockKey()
 	if err != nil {
 		log.Error(fmt.Sprintf("worker.RemoveDatabase() Error aquiring lock ! %s", err))
 		return

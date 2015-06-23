@@ -1,6 +1,25 @@
 package tasks
 
 func BackupDatabase(data string) (err error) {
+	//r := rdpg.NewRDPG()
+	//key := fmt.Sprintf("rdpg/%s/work/database/%s/backup", r.Datacenter,data)
+	//client, _ := api.NewClient(api.DefaultConfig())
+	//lock, err := client.LockKey()
+	//if err != nil {
+	//	log.Error(fmt.Sprintf("worker.BackupDatabase() Error aquiring lock ! %s", err))
+	//	return
+	//}
+	//leaderCh, err := lock.Lock(nil)
+	//if err != nil {
+	//	log.Error(fmt.Sprintf("worker.BackupDatabase() Error aquiring lock ! %s", err))
+	//	return
+	//}
+	//if leaderCh == nil {
+	//	log.Trace(fmt.Sprintf("worker.BackupDatabase() > Not Leader."))
+	//	return
+	//}
+	//log.Trace(fmt.Sprintf("worker.BackupDatabase() > Leader."))
+
 	// Be sure to keep audit history in the rdpg database backups & audit schema.
 	// func BackupDatabase(dbname, backup_location) {
 	// 	fileName := backup_location + "/" + dbname + epochcalculation
@@ -21,7 +40,26 @@ func BackupDatabase(data string) (err error) {
 	return
 }
 
-func BackupAllDatabase(data string) (err error) {
+func BackupAllDatabases(data string) (err error) {
+	//r := rdpg.NewRDPG()
+	//key := fmt.Sprintf("rdpg/%s/work/databases/backup", r.Datacenter,data)
+	//client, _ := api.NewClient(api.DefaultConfig())
+	//lock, err := client.LockKey()
+	//if err != nil {
+	//	log.Error(fmt.Sprintf("worker.BackupAllDatabases() Error aquiring lock ! %s", err))
+	//	return
+	//}
+	//leaderCh, err := lock.Lock(nil)
+	//if err != nil {
+	//	log.Error(fmt.Sprintf("worker.BackupAllDatabases() Error aquiring lock ! %s", err))
+	//	return
+	//}
+	//if leaderCh == nil {
+	//	log.Trace(fmt.Sprintf("worker.BackupAllDatabases() > Not Leader."))
+	//	return
+	//}
+	//log.Trace(fmt.Sprintf("worker.BackupAllDatabases() > Leader."))
+
 	// Be sure to keep audit history in the rdpg database backups & audit schema.
 	//
 	// start_at := now

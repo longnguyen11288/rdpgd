@@ -230,8 +230,8 @@ func Remove() (err error) {
 
 func (i *Instance) Lock() (err error) {
 	// Acquire consul schedulerLock to aquire right to schedule tasks.
-	// TODO: Add Cluster ID to make this unique across all bdr clusters.
-	key := fmt.Sprintf("rdpg/clusterid/cfsb/instance/id/%s", i.Id)
+	r := rdpg.NewRDPG()
+	key := fmt.Sprintf("rdpg/%s/cfsb/instance/id/%s", r.Datacenter, i.Id)
 	client, _ := consulapi.NewClient(consulapi.DefaultConfig())
 	i.lock, err = client.LockKey(key)
 	if err != nil {

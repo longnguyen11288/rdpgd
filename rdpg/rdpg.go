@@ -121,8 +121,8 @@ func CallAdminAPI(ip, method, path string) (err error) {
 	return
 }
 
-func Bootstrap() (err error) {
-	key := "rdpg/clusterId/bootstrap"
+func (r *RDPG) Bootstrap() (err error) {
+	key := fmt.Sprintf("rdpg/%s/bootstrap", r.Datacenter)
 	client, _ := consulapi.NewClient(consulapi.DefaultConfig())
 	lock, err := client.LockKey(key)
 	if err != nil {
@@ -139,8 +139,6 @@ func Bootstrap() (err error) {
 	if lockCh == nil {
 		err = fmt.Errorf(`rdpg.Bootstrap() Bootstrap Lock not aquired.`)
 	}
-
-	r := NewRDPG()
 
 	err = r.InitSchema()
 	if err != nil {
