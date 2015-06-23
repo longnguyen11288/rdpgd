@@ -12,7 +12,7 @@ var (
 )
 
 func init() {
-	lvl := os.Getenv("RDPG_AGENT_LOG_LEVEL")
+	lvl := os.Getenv("RDPGD_LOG_LEVEL")
 	if lvl != "" {
 		level = code(lvl)
 	} else {

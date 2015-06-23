@@ -19,9 +19,9 @@ func Check(check string) (status int) {
 
 	switch check {
 	case "ha_pb_pg":
-		var numHosts int
-		r.DB.Get(&numHosts, "SELECT count(node_name) FROM bdr.bdr_nodes;")
-		if numHosts < 2 {
+		var numNodes int
+		r.DB.Get(&numNodes, "SELECT count(node_name) FROM bdr.bdr_nodes;")
+		if numNodes < 2 {
 			return http.StatusInternalServerError
 		}
 	default:

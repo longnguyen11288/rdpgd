@@ -43,11 +43,11 @@ Configuration of `rdpg` is done via environment variables passed into the runnin
 ```sh
 export \
   LOGLEVEL=debug \
-  RDPG_SB_PORT=8888 \
-  RDPG_SB_USER=cf \
-  RDPG_SB_PASS=cf \
-  RDPG_ADMIN_PORT=58888 \
-  RDPG_ADMIN_PG_URI="postgresql://postgres:admin@127.0.0.1:55432/rdpg?sslmode=disable&connect_timeout=5&fallback_application_name=rdpg" 
+  RDPGD_SB_PORT=8888 \
+  RDPGD_SB_USER=cf \
+  RDPGD_SB_PASS=cf \
+  RDPGD_ADMIN_PORT=58888 \
+  RDPGD_ADMIN_PG_URI="postgresql://postgres:admin@127.0.0.1:55432/rdpg?sslmode=disable&connect_timeout=5&fallback_application_name=rdpg" 
 ```
 
 When running the agent locally, you will need to first deploy the 

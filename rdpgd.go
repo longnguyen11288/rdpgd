@@ -22,38 +22,16 @@ var (
 )
 
 func init() {
-	pidFile = os.Getenv("RDPG_AGENT_PIDFILE")
+	pidFile = os.Getenv("RDPGD_PIDFILE")
 }
 
 // TODO: Allow for --version
 func main() {
-	if pidFile != "" {
-		pid := os.Getpid()
-		log.Debug(fmt.Sprintf("Writing pid %d to %s", pid, pidFile))
-		err := ioutil.WriteFile(pidFile, []byte(strconv.Itoa(pid)), 0644)
-		if err != nil {
-			log.Error(fmt.Sprintf(`Error while writing pid '%d' to '%s' :: %s`, pid, pidFile, err))
-			os.Exit(1)
-		}
-	}
+	go signalHandler()
 
-	ch := make(chan os.Signal, 1)
-	signal.Notify(ch, os.Interrupt, syscall.SIGTERM)
+	writePidFile()
 
-	go func() {
-		for sig := range ch {
-			log.Info(fmt.Sprintf("Received %v, shutting down...", sig))
-			if _, err := os.Stat(pidFile); err == nil {
-				if err := os.Remove(pidFile); err != nil {
-					log.Error(err.Error())
-					os.Exit(1)
-				}
-			}
-			os.Exit(0)
-		}
-	}()
-
-	ParseArgs()
+	parseArgs()
 
 	switch Role {
 	case "manager":
@@ -65,24 +43,7 @@ func main() {
 	}
 }
 
-func manager() error {
-	go cfsbapi.Listen()
-	go tasks.Schedule()
-	go tasks.Work()
-	adminapi.Listen()
-}
-
-func service() error {
-	go tasks.Schedule()
-	go tasks.Work()
-	adminapi.Listen()
-}
-
-func bootstrap() error {
-	rdpg.Bootstrap()
-}
-
-func ParseArgs() {
+func parseArgs() {
 	for index, arg := range os.Args {
 		if index == 0 {
 			continue
@@ -110,22 +71,66 @@ func ParseArgs() {
 
 func usage() {
 	fmt.Fprintf(os.Stdout, `
-rdpg
+	rdpg
 
-Usage:
+	Usage:
 
-  rdpg [Flag(s)] <Action>
+	rdpg [Flag(s)] <Action>
 
-Actions:
+	Actions:
 
-  bootstrap Bootstrap RDPG schemas, filesystem etc...
-  version   print rdpg version
-  help      print this message
+	bootstrap Bootstrap RDPG schemas, filesystem etc...
+	version   print rdpg version
+	help      print this message
 
-Flags:
+	Flags:
 
-  --version  print rdpg version
-  --help     print this message
+	--version  print rdpg version
+	--help     print this message
 
-`)
+	`)
+}
+
+func manager() error {
+	go cfsbapi.Listen()
+	go tasks.Schedule()
+	go tasks.Work()
+	adminapi.Listen()
+}
+
+func service() error {
+	go tasks.Schedule()
+	go tasks.Work()
+	adminapi.Listen()
+}
+
+func bootstrap() error {
+	rdpg.Bootstrap()
+}
+
+func writePidFile() {
+	if pidFile != "" {
+		pid := os.Getpid()
+		log.Trace(fmt.Sprintf("main.writePidFile() Writing pid %d to %s", pid, pidFile))
+		err := ioutil.WriteFile(pidFile, []byte(strconv.Itoa(pid)), 0644)
+		if err != nil {
+			log.Error(fmt.Sprintf(`main.writePidFile() Error while writing pid '%d' to '%s' :: %s`, pid, pidFile, err))
+			os.Exit(1)
+		}
+	}
+}
+
+func signalHandler() error {
+	ch := make(chan os.Signal, 1)
+	signal.Notify(ch, os.Interrupt, syscall.SIGTERM)
+	for sig := range ch {
+		log.Info(fmt.Sprintf("main.signalHandler() Received signal %v, shutting down...", sig))
+		if _, err := os.Stat(pidFile); err == nil {
+			if err := os.Remove(pidFile); err != nil {
+				log.Error(err.Error())
+				os.Exit(1)
+			}
+		}
+		os.Exit(0)
+	}
 }

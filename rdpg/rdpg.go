@@ -8,6 +8,7 @@ import (
 	"os"
 	"syscall"
 
+	consulapi "github.com/hashicorp/consul/api"
 	"github.com/jmoiron/sqlx"
 	"github.com/wayneeseguin/rdpgd/log"
 )
@@ -17,39 +18,36 @@ var (
 )
 
 type RDPG struct {
-	URI string
-	DB  *sqlx.DB
+	Datacenter string
+	IP         string
+	URI        string
+	DB         *sqlx.DB
 }
 
 func init() {
 	// Question: should we not bother trying to connect until first use???
-	rdpgURI = os.Getenv("RDPG_ADMIN_PG_URI")
+	rdpgURI = os.Getenv("RDPGD_ADMIN_PG_URI")
 	if rdpgURI == "" || rdpgURI[0:13] != "postgresql://" {
-		log.Error("ERROR: RDPG_ADMIN_PG_URI is not set.")
-		proc, _ := os.FindProcess(os.Getpid())
-		proc.Signal(syscall.SIGTERM)
-	}
-
-	db, err := sqlx.Connect("postgres", rdpgURI)
-	if err != nil {
-		log.Error(fmt.Sprintf("Failed connecting to %s err: %s", rdpgURI, err))
-		proc, _ := os.FindProcess(os.Getpid())
-		proc.Signal(syscall.SIGTERM)
-	}
-	defer db.Close()
-
-	err = db.Ping()
-	if err != nil {
-		log.Error(fmt.Sprintf("Unable to Ping %s err: %s", rdpgURI, err))
+		log.Error("ERROR: RDPGD_ADMIN_PG_URI is not a proper postgresql:// URI.")
 		proc, _ := os.FindProcess(os.Getpid())
 		proc.Signal(syscall.SIGTERM)
 	}
 }
 
-// TODO: RDPG Struct => RDPG Struct, allowing for multiple instances of RDPG
-// TODO: Add concept of 'target' RDPG Cluster instead of assuming local.
 func NewRDPG() (r *RDPG) {
 	r = &RDPG{URI: rdpgURI}
+
+	client, err := consulapi.NewClient(consulapi.DefaultConfig())
+	if err != nil {
+		log.Error(fmt.Sprintf("rdpg.NewRDPG() ! %s", err))
+		return
+	}
+	agent := client.Agent()
+	info, err := agent.Self()
+
+	r.Datacenter = info["Config"]["Datacenter"].(string)
+	r.IP = info["Config"]["AdvertiseAddr"].(string)
+
 	return
 }
 
@@ -98,17 +96,20 @@ func (r *RDPG) OpenDB(dbname string) (err error) {
 func (r *RDPG) connect() (db *sqlx.DB, err error) {
 	db, err = sqlx.Connect("postgres", r.URI)
 	if err != nil {
-		log.Error(fmt.Sprintf("rdpg#connect() %s ! %s", r.URI, err))
+		log.Error(fmt.Sprintf("rdpg.connect() Failed connecting to %s err: %s", r.URI, err))
 	}
-	return db, err
+	return
 }
 
 // Call RDPG Admin API for given IP
 func CallAdminAPI(ip, method, path string) (err error) {
-	url := fmt.Sprintf("http://%s:%s/%s", ip, os.Getenv("RDPG_ADMIN_PORT"), path)
+	url := fmt.Sprintf("http://%s:%s/%s", ip, os.Getenv("RDPGD_ADMIN_PORT"), path)
 	req, err := http.NewRequest(method, url, bytes.NewBuffer([]byte(`{}`)))
 	// req.Header.Set("Content-Type", "application/json")
-	req.SetBasicAuth(os.Getenv("RDPG_ADMIN_USER"), os.Getenv("RDPG_ADMIN_PASS"))
+
+	// TODO: Retrieve from configuration in database.
+	req.SetBasicAuth(os.Getenv("RDPGD_ADMIN_USER"), os.Getenv("RDPGD_ADMIN_PASS"))
+
 	client := &http.Client{}
 
 	log.Trace(fmt.Sprintf(`pg.Host<%s>#AdminAPI(%s,%s) %s`, ip, method, path, url))
@@ -121,11 +122,51 @@ func CallAdminAPI(ip, method, path string) (err error) {
 }
 
 func Bootstrap() (err error) {
+	key := "rdpg/clusterId/bootstrap"
+	client, _ := consulapi.NewClient(consulapi.DefaultConfig())
+	lock, err := client.LockKey(key)
+	if err != nil {
+		log.Error(fmt.Sprintf("rdpg.Bootstrap() Error Locking Bootstrap Key %s ! %s", key, err))
+		return
+	}
+
+	lockCh, err := lock.Lock(nil) // Acquire Consul K/V Lock
+	if err != nil {
+		log.Error(fmt.Sprintf("rdpg.Bootstrap() Error Aquiring Bootstrap Key lock %s ! %s", key, err))
+		return
+	}
+
+	if lockCh == nil {
+		err = fmt.Errorf(`rdpg.Bootstrap() Bootstrap Lock not aquired.`)
+	}
+
 	r := NewRDPG()
+
 	err = r.InitSchema()
 	if err != nil {
+		err = lock.Unlock()
+		if err != nil {
+			log.Error(fmt.Sprintf("rdpg.Bootstrap() Error Unlocking Scheduler ! %s", err))
+		}
 		proc, _ := os.FindProcess(os.Getpid())
 		proc.Signal(syscall.SIGTERM)
 	}
+	// Note that we are intentionally not unlocking the cluster bootsrap if
+	// bootstrapping was successful as we only want it done once per cluster.
+	return
+}
+
+func Datacenters() (datacenters []string, err error) {
+	client, err := consulapi.NewClient(consulapi.DefaultConfig())
+	if err != nil {
+		return
+	}
+	agent := client.Agent()
+	info, err := agent.Self()
+	if err != nil {
+		return
+	}
+	catalog := client.Catalog()
+	datacenters, err = catalog.Datacenters()
 	return
 }

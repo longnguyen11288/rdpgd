@@ -34,7 +34,7 @@ func (s *Service) Configure() (err error) {
 	case "haproxy":
 		header, err := ioutil.ReadFile(`/var/vcap/jobs/rdpg/config/haproxy/haproxy.cfg.header`)
 		if err != nil {
-			log.Error(fmt.Sprintf("cfsbapi#Service.Configure(%s) ! %s", s.Name, err))
+			log.Error(fmt.Sprintf("adminapi#Service.Configure(%s) ! %s", s.Name, err))
 			return err
 		}
 
@@ -56,14 +56,14 @@ backend pgbdr_write_master
 		hc := []string{string(header), footer}
 		err = ioutil.WriteFile(`/var/vcap/jobs/haproxy/config/haproxy.cfg`, []byte(strings.Join(hc, "\n")), 0640)
 		if err != nil {
-			log.Error(fmt.Sprintf("cfsbapi#Service.Configure(%s) ! %s", s.Name, err))
+			log.Error(fmt.Sprintf("adminapi#Service.Configure(%s) ! %s", s.Name, err))
 			return err
 		}
 
 		cmd := exec.Command("/var/vcap/jobs/haproxy/bin/control", "reload")
 		err = cmd.Run()
 		if err != nil {
-			log.Error(fmt.Sprintf("cfsbapi#Service.Configure(%s) ! %s", s.Name, err))
+			log.Error(fmt.Sprintf("adminapi#Service.Configure(%s) ! %s", s.Name, err))
 			return err
 		}
 
@@ -71,19 +71,19 @@ backend pgbdr_write_master
 	case "pgbouncer":
 		instances, err := cfsbapi.Instances()
 		if err != nil {
-			log.Error(fmt.Sprintf("cfsbapi#Service.Configure(%s) ! %s", s.Name, err))
+			log.Error(fmt.Sprintf("adminapi#Service.Configure(%s) ! %s", s.Name, err))
 			return err
 		}
 
 		pgbConf, err := ioutil.ReadFile(`/var/vcap/jobs/rdpg/config/pgbouncer/pgbouncer.ini`)
 		if err != nil {
-			log.Error(fmt.Sprintf("cfsbapi#Service.Configure(%s) ! %s", s.Name, err))
+			log.Error(fmt.Sprintf("adminapi#Service.Configure(%s) ! %s", s.Name, err))
 			return err
 		}
 
 		pgbUsers, err := ioutil.ReadFile(`/var/vcap/jobs/rdpg/config/pgbouncer/users`)
 		if err != nil {
-			log.Error(fmt.Sprintf("cfsbapi#Service.Configure(%s) ! %s", s.Name, err))
+			log.Error(fmt.Sprintf("adminapi#Service.Configure(%s) ! %s", s.Name, err))
 			return err
 		}
 		pc := []string{string(pgbConf)}
@@ -100,24 +100,50 @@ backend pgbdr_write_master
 
 		err = ioutil.WriteFile(`/var/vcap/store/pgbouncer/config/pgbouncer.ini`, []byte(strings.Join(pc, "\n")), 0640)
 		if err != nil {
-			log.Error(fmt.Sprintf("cfsbapi#Service.Configure(%s) ! %s", s.Name, err))
+			log.Error(fmt.Sprintf("adminapi#Service.Configure(%s) ! %s", s.Name, err))
 			return err
 		}
 
 		err = ioutil.WriteFile(`/var/vcap/store/pgbouncer/config/users`, []byte(strings.Join(pu, "\n")), 0640)
 		if err != nil {
-			log.Error(fmt.Sprintf("cfsbapi#Service.Configure(%s) ! %s", s.Name, err))
+			log.Error(fmt.Sprintf("adminapi#Service.Configure(%s) ! %s", s.Name, err))
 			return err
 		}
 
 		cmd := exec.Command("/var/vcap/jobs/pgbouncer/bin/control", "reload")
 		err = cmd.Run()
 		if err != nil {
-			log.Error(fmt.Sprintf("cfsbapi#Service.Configure(%s) ! %s", s.Name, err))
+			log.Error(fmt.Sprintf("adminapi#Service.Configure(%s) ! %s", s.Name, err))
 			return err
 		}
 	case "pgbdr":
-		return errors.New(`Service#Configure("pgbdr") is not yet implemented`)
+		// Add pg_hba.conf lines for the current datacenter cluster
+		r := rdpg.NewRDPG()
+		cluster, err := rdpg.NewCluster(r.Datacenter)
+		if err != nil {
+			// do something, yeah I'm tired
+		}
+		hba, err := ioutil.ReadFile(`/var/vcap/jobs/pgbdr/config/pg_hba.conf`)
+		if err != nil {
+			log.Error(fmt.Sprintf("adminapi#Service.Configure(%s) ! %s", s.Name, err))
+			return err
+		}
+
+		for _, node := range cluster.Nodes {
+			hba += fmt.Sprintf(`host    replication   postgres %s/32  trust\n`, node.PG.IP)
+			hba += fmt.Sprintf(`host    all           postgres %s/32  trust\n`, node.PG.IP)
+		}
+		err = ioutil.WriteFile(`/var/vcap/store/pgbdr/data/pg_hba.conf`, []byte(hba), 0640)
+		if err != nil {
+			log.Error(fmt.Sprintf("adminapi#Service.Configure(%s) ! %s", s.Name, err))
+			return err
+		}
+		cmd := exec.Command("/var/vcap/jobs/pgbdr/bin/control", "reload")
+		err = cmd.Run()
+		if err != nil {
+			log.Error(fmt.Sprintf("adminapi#Service.Configure(%s) ! %s", s.Name, err))
+			return err
+		}
 	default:
 		return errors.New(fmt.Sprintf(`Service#Configure("%s") is unknown.`, s.Name))
 	}

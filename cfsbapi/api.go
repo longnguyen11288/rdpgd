@@ -22,15 +22,15 @@ type CFSB struct {
 
 // StatusPreconditionFailed
 func init() {
-	sbPort = os.Getenv("RDPG_SB_PORT")
+	sbPort = os.Getenv("RDPGD_SB_PORT")
 	if sbPort == "" {
 		sbPort = "8080"
 	}
-	sbUser = os.Getenv("RDPG_SB_USER")
+	sbUser = os.Getenv("RDPGD_SB_USER")
 	if sbUser == "" {
 		sbUser = "cfadmin"
 	}
-	sbPass = os.Getenv("RDPG_SB_PASS")
+	sbPass = os.Getenv("RDPGD_SB_PASS")
 	if sbPass == "" {
 		sbPass = "cfadmin"
 	}

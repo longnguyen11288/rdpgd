@@ -59,8 +59,6 @@ func Scheduler() {
 
 		schedules := []Schedule{}
 
-		// Leader, lets get Scheduling!
-		// Duration + last_scheduled_at
 		sq := fmt.Sprintf(`SELECT schedule, role, action, data, ttl, last_scheduled_at FROM tasks.schedules WHERE CURRENT_TIMESTAMP >= (last_scheduled_at + frequency::interval);`)
 		err = r.DB.Select(&schedules, sq)
 		if err != nil {
@@ -109,7 +107,7 @@ func SchedulerLock() (err error) {
 	}
 
 	if lockCh == nil {
-		err = fmt.Errorf(`Scheduler Lock not aquired.`)
+		err = fmt.Errorf(`tasks.SchedulerLock() Scheduler Lock not aquired.`)
 	}
 
 	return

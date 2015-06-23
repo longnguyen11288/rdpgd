@@ -7,7 +7,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/armon/consul-api"
+	consulapi "github.com/hashicorp/consul/api"
+
 	"github.com/wayneeseguin/rdpgd/log"
 	"github.com/wayneeseguin/rdpgd/rdpg"
 )
@@ -164,6 +165,7 @@ func (i *Instance) Remove() (err error) {
 	}
 	time.Sleep(1) // Wait for the update to propigate to the other hosts.
 
+	// TODO: For the target cluster's Service Nodes...
 	for _, host := range r.Hosts() {
 		err := host.AdminAPI("PUT", "services/pgbouncer/configure")
 		if err != nil {
@@ -176,6 +178,7 @@ func (i *Instance) Remove() (err error) {
 func (i *Instance) ExternalDNS() (dns string) {
 	// TODO: Figure out where we'll store and retrieve the external DNS information
 	r := rdpg.NewRDPG()
+	// TODO: For the target cluster's Service Nodes...
 	hosts := r.Hosts()
 	// TODO: Import the external DNS host via env variable configuration.
 	return hosts[0].IP + ":5432"

@@ -19,15 +19,15 @@ type Admin struct {
 }
 
 func init() {
-	adminPort = os.Getenv("RDPG_ADMIN_PORT")
+	adminPort = os.Getenv("RDPGD_ADMIN_PORT")
 	if adminPort == "" {
 		adminPort = "58888"
 	}
-	adminUser = os.Getenv("RDPG_ADMIN_USER")
+	adminUser = os.Getenv("RDPGD_ADMIN_USER")
 	if adminUser == "" {
 		adminUser = "admin"
 	}
-	adminPass = os.Getenv("RDPG_ADMIN_PASS")
+	adminPass = os.Getenv("RDPGD_ADMIN_PASS")
 	if adminPass == "" {
 		adminPass = "admin"
 	}
