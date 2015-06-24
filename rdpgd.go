@@ -92,6 +92,7 @@ func usage() {
 }
 
 func manager() (err error) {
+	log.Info(`Starting with 'manager' role...`)
 	bootstrap()
 	go cfsbapi.Listen()
 	go tasks.Scheduler(Role)
@@ -101,6 +102,7 @@ func manager() (err error) {
 }
 
 func service() (err error) {
+	log.Info(`Starting with 'service' role...`)
 	bootstrap()
 	go tasks.Scheduler(Role)
 	go tasks.Work(Role)

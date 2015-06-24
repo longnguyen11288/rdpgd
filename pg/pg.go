@@ -23,6 +23,10 @@ type PG struct {
 // Create and return a new PG using default parameters
 func NewPG(host, port, user, database string) (p PG) {
 	p = PG{IP: host, Port: port, User: user, Database: database}
+	p.ConnectTimeout = `3s` // Default connection time out.
+	p.pgURI()
+	p.pgDSN()
+
 	return
 }
 
@@ -37,7 +41,8 @@ func (p *PG) UserExists(dbuser string) (exists bool, err error) {
 	defer db.Close()
 
 	var name string
-	err = db.Get(&name, `SELECT rolname FROM pg_roles WHERE rolname=? LIMIT 1;`, dbuser)
+	sq := fmt.Sprintf(`SELECT rolname AS name FROM pg_roles WHERE rolname='%s' LIMIT 1;`, dbuser)
+	err = db.Get(&name, sq)
 	if err != nil {
 		log.Error(fmt.Sprintf(`pg.PG<%s>#UserExists(%s) ! %s`, p.IP, dbuser, err))
 		return
@@ -61,7 +66,8 @@ func (p *PG) DatabaseExists(dbname string) (exists bool, err error) {
 	defer db.Close()
 
 	var name string
-	err = db.Get(&name, `SELECT datname FROM pg_database WHERE datname=?;`, dbname)
+	sq := fmt.Sprintf(`SELECT datname AS name FROM pg_database WHERE datname='%s';`, dbname)
+	err = db.Get(&name, sq)
 	if err != nil {
 		log.Error(fmt.Sprintf(`pg.PG<%s>#DatabaseExists(%s) ! %s`, p.IP, dbname, err))
 		return
