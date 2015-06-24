@@ -92,23 +92,30 @@ func usage() {
 }
 
 func manager() (err error) {
+	bootstrap()
 	go cfsbapi.Listen()
-	go tasks.Scheduler()
-	go tasks.Work()
+	go tasks.Scheduler(Role)
+	go tasks.Work(Role)
 	adminapi.Listen()
 	return
 }
 
 func service() (err error) {
-	go tasks.Scheduler()
-	go tasks.Work()
+	bootstrap()
+	go tasks.Scheduler(Role)
+	go tasks.Work(Role)
 	adminapi.Listen()
 	return
 }
 
 func bootstrap() (err error) {
 	r := rdpg.NewRDPG()
-	r.Bootstrap()
+	err = r.Bootstrap(Role)
+	if err != nil {
+		log.Error(fmt.Sprintf(`Bootstrap(%s) failed`, Role))
+		proc, _ := os.FindProcess(os.Getpid())
+		proc.Signal(syscall.SIGTERM)
+	}
 	return
 }
 

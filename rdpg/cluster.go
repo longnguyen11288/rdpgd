@@ -21,7 +21,6 @@ type Cluster struct {
 
 func NewCluster(dc string) (c *Cluster, err error) {
 	c = &Cluster{ID: dc}
-
 	client, err := consulapi.NewClient(consulapi.DefaultConfig())
 	if err != nil {
 		log.Error(fmt.Sprintf("rdpg.NewCluster() %s ! %s", dc, err))
@@ -34,7 +33,6 @@ func NewCluster(dc string) (c *Cluster, err error) {
 		log.Error(fmt.Sprintf("rdpg.NewCluster() %s ! %s", dc, err))
 		return
 	}
-
 	for _, catalogNode := range catalogNodes {
 		node := Node{PG: &pg.PG{IP: catalogNode.Address}}
 		c.Nodes = append(c.Nodes, node)

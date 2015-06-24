@@ -15,6 +15,7 @@ import (
 
 type Instance struct {
 	Id             string `db:"id"`
+	ClusterID      string `db:"cluster_id" json:"cluster_id"`
 	InstanceId     string `db:"instance_id" json:"instance_id"`
 	ServiceId      string `db:"service_id" json:"service_id"`
 	PlanId         string `db:"plan_id" json:"plan_id"`
@@ -165,10 +166,7 @@ func (i *Instance) Remove() (err error) {
 	}
 	time.Sleep(1) // Wait for the update to propigate to the other hosts.
 
-	// TODO: For the target cluster's Service Nodes... ClusterID
-	// TODO: locate datacenter that instance is on then:
-	dc := "rdpg_cluster_a"
-	cluster, err := rdpg.NewCluster(dc)
+	cluster, err := rdpg.NewCluster(i.ClusterID)
 	if err != nil {
 		log.Error(fmt.Sprintf(`cfsbapi.Instance#ExternalDNS(%s) ! %s`, err))
 	}

@@ -42,7 +42,7 @@ Thoughts on scheduler.tasks table:
 Interval + start_at clock time of day
 
 */
-func Scheduler() {
+func Scheduler(role string) {
 	r := rdpg.NewRDPG()
 	err := r.OpenDB("rdpg")
 	if err != nil {
@@ -60,10 +60,8 @@ func Scheduler() {
 		if err != nil {
 			continue
 		}
-
 		schedules := []Schedule{}
-
-		sq := fmt.Sprintf(`SELECT schedule, role, action, data, ttl, last_scheduled_at FROM tasks.schedules WHERE CURRENT_TIMESTAMP >= (last_scheduled_at + frequency::interval);`)
+		sq := fmt.Sprintf(`SELECT schedule, role, action, data, ttl, last_scheduled_at FROM tasks.schedules WHERE CURRENT_TIMESTAMP >= (last_scheduled_at + frequency::interval) AND role = '%s';`, role)
 		err = r.DB.Select(&schedules, sq)
 		if err != nil {
 			log.Error(fmt.Sprintf(`tasks.Scheduler() Selecting Schedules ! %s`, err))

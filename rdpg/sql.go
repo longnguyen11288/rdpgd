@@ -103,6 +103,7 @@ CREATE TABLE IF NOT EXISTS rdpg.events (
 CREATE TABLE IF NOT EXISTS tasks.tasks ( 
   id BIGSERIAL NOT NULL PRIMARY KEY, 
   task_id TEXT NOT NULL,
+  role TEXT NOT NULL,
   action TEXT NOT NULL,
   data TEXT NOT NULL,
   locked_by text,
@@ -113,6 +114,7 @@ CREATE TABLE IF NOT EXISTS tasks.tasks (
 	"create_table_tasks_schedules": `
 CREATE TABLE IF NOT EXISTS tasks.schedules ( 
   id BIGSERIAL NOT NULL PRIMARY KEY, 
+  role TEXT NOT NULL,
   action TEXT NOT NULL,
   data TEXT NOT NULL,
   frequency INTERVAL,

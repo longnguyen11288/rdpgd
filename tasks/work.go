@@ -10,7 +10,7 @@ import (
 	"github.com/wayneeseguin/rdpgd/rdpg"
 )
 
-func Work() {
+func Work(role string) {
 	r := rdpg.NewRDPG()
 	err := r.OpenDB("rdpg")
 	if err != nil {
@@ -24,7 +24,7 @@ func Work() {
 		// TODO: only work for my role type: write vs read
 		// eg. WHERE role = 'read'
 		tasks := []Task{}
-		sq := `SELECT task_id,func,data,ttl FROM tasks.tasks WHERE processed_at IS NULL AND locked_by IS NULL ORDER BY created_at DESC LIMIT 10;`
+		sq := fmt.Sprintf(`SELECT task_id,func,data,ttl FROM tasks.tasks WHERE processed_at IS NULL AND locked_by IS NULL AND role = '%s' ORDER BY created_at DESC LIMIT 10;`, role)
 		err = r.DB.Select(&tasks, sq)
 		if err != nil {
 			log.Error(fmt.Sprintf(`tasks.Work() Selecting Task ! %s`, err))
