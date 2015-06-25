@@ -1,6 +1,7 @@
 package pg
 
 import (
+	"database/sql"
 	"fmt"
 
 	"github.com/jmoiron/sqlx"
@@ -40,14 +41,22 @@ func (p *PG) UserExists(dbuser string) (exists bool, err error) {
 	}
 	defer db.Close()
 
-	var name string
-	sq := fmt.Sprintf(`SELECT rolname AS name FROM pg_roles WHERE rolname='%s' LIMIT 1;`, dbuser)
-	err = db.Get(&name, sq)
-	if err != nil {
-		log.Error(fmt.Sprintf(`pg.PG<%s>#UserExists(%s) ! %s`, p.IP, dbuser, err))
-		return
+	type name struct {
+		Name string `db:"name"`
 	}
-	if name != "" {
+	var n name
+	sq := fmt.Sprintf(`SELECT rolname AS name FROM pg_roles WHERE rolname='%s' LIMIT 1;`, dbuser)
+	err = db.Get(&n, sq)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			exists = false
+			err = nil
+		} else {
+			log.Error(fmt.Sprintf(`pg.PG<%s>#UserExists(%s) ! %s`, p.IP, dbuser, err))
+			return
+		}
+	}
+	if n.Name != "" {
 		exists = true
 	} else {
 		exists = false
@@ -65,14 +74,22 @@ func (p *PG) DatabaseExists(dbname string) (exists bool, err error) {
 	}
 	defer db.Close()
 
-	var name string
-	sq := fmt.Sprintf(`SELECT datname AS name FROM pg_database WHERE datname='%s';`, dbname)
-	err = db.Get(&name, sq)
-	if err != nil {
-		log.Error(fmt.Sprintf(`pg.PG<%s>#DatabaseExists(%s) ! %s`, p.IP, dbname, err))
-		return
+	type name struct {
+		Name string `db:"name"`
 	}
-	if name != "" {
+	var n name
+	sq := fmt.Sprintf(`SELECT datname AS name FROM pg_database WHERE datname='%s' LIMIT 1;`, dbname)
+	err = db.Get(&n, sq)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			exists = false
+			err = nil
+		} else {
+			log.Error(fmt.Sprintf(`pg.PG<%s>#DatabaseExists(%s) ! %s`, p.IP, dbname, err))
+			return
+		}
+	}
+	if n.Name != "" {
 		exists = true
 	} else {
 		exists = false
