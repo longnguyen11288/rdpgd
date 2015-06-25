@@ -128,7 +128,7 @@ func (p *PG) CreateUser(dbuser, dbpass string) (err error) {
 		return err
 	}
 
-	sq = fmt.Sprintf(`ALTER USER %s ENCRYPTED PASSWORD %s;`, dbuser, dbpass)
+	sq = fmt.Sprintf(`ALTER USER %s ENCRYPTED PASSWORD '%s';`, dbuser, dbpass)
 	log.Trace(fmt.Sprintf(`pg.PG<%s>#CreateUser(%s)`, p.IP, dbuser))
 	_, err = db.Exec(sq)
 	if err != nil {
