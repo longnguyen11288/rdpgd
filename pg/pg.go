@@ -226,7 +226,7 @@ func (p *PG) CreateExtensions(dbname string, exts []string) (err error) {
 		_, err = db.Exec(sq)
 		if err != nil {
 			db.Close()
-			log.Error(fmt.Sprintf("pg.PG<%s>#CreateExtension() %s ! %s", p.IP, ext, err))
+			log.Error(fmt.Sprintf("pg.PG<%s>#CreateExtensions() %s ! %s", p.IP, ext, err))
 			return
 		}
 	}

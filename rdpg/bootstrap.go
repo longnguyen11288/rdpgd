@@ -3,6 +3,7 @@ package rdpg
 import (
 	"fmt"
 	"os"
+	"time"
 
 	consulapi "github.com/hashicorp/consul/api"
 	"github.com/wayneeseguin/rdpgd/bdr"
@@ -38,13 +39,13 @@ func (r *RDPG) Bootstrap(role string) (err error) {
 		return
 	}
 	defer db.Close()
-
 	sq := `ALTER USER rdpg WITH SUPERUSER CREATEDB CREATEROLE INHERIT;`
 	_, err = db.Exec(sq)
 	if err != nil {
 		log.Error(fmt.Sprintf("rdpg.Bootstrap() ALTER USER ! %s", err))
 		return
 	}
+
 	exists, err = p.DatabaseExists(`rdpg`)
 	if err != nil {
 		log.Error(fmt.Sprintf("rdpg.Bootstrap() DatabaseExists() ! %s", err))
@@ -60,6 +61,12 @@ func (r *RDPG) Bootstrap(role string) (err error) {
 	err = p.CreateExtensions(`rdpg`, []string{"btree_gist", "bdr"})
 	if err != nil {
 		log.Error(fmt.Sprintf("rdpg.Bootstrap() CreateExtensions() ! %s", err))
+		return
+	}
+
+	err = r.Register()
+	if err != nil {
+		log.Error(fmt.Sprintf("rdpg.Bootstrap() Register() ! %s", err))
 		return
 	}
 
@@ -85,6 +92,18 @@ func (r *RDPG) Bootstrap(role string) (err error) {
 	// bootstrapping was successful as we only want it done once per cluster.
 
 	b := bdr.NewBDR(r.ClusterID)
+	for { // Wait for our nodes to be online.
+		nodes, err := b.PGNodes()
+		if err != nil {
+			log.Error(fmt.Sprintf(`rdpg.Bootstrap() Error Starting Replication for database 'rdpg' ! %s`, err))
+			return err
+		}
+		if len(nodes) > 2 {
+			break
+		}
+		time.Sleep(1 * time.Second)
+	}
+
 	err = b.CreateReplicationGroup(`rdpg`)
 	if err != nil {
 		lock.Unlock()

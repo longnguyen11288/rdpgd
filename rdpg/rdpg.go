@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"strconv"
 	"syscall"
 
 	consulapi "github.com/hashicorp/consul/api"
@@ -44,10 +45,8 @@ func NewRDPG() (r *RDPG) {
 	}
 	agent := client.Agent()
 	info, err := agent.Self()
-
-	r.ClusterID = info["Config"]["Datacenter"].(string)
+	r.ClusterID = os.Getenv("RDPGD_CLUSTER")
 	r.IP = info["Config"]["AdvertiseAddr"].(string)
-
 	return
 }
 
@@ -131,5 +130,33 @@ func CallAdminAPI(ip, method, path string) (err error) {
 		log.Error(fmt.Sprintf(`pg.Host<%s>#AdminAPI(%s,%s) ! %s`, ip, method, url, err))
 	}
 	resp.Body.Close()
+	return
+}
+
+func (r *RDPG) Register() (err error) {
+	client, err := consulapi.NewClient(consulapi.DefaultConfig())
+	if err != nil {
+		log.Error(fmt.Sprintf("rdpgRDPG#Register() ! %s", err))
+		return
+	}
+	agent := client.Agent()
+	port, err := strconv.Atoi(os.Getenv("PG_PORT"))
+	if err != nil {
+		log.Error(fmt.Sprintf("rdpgRDPG#Register() ! %s", err))
+		return
+	}
+
+	registration := &consulapi.AgentServiceRegistration{
+		ID:   "rdpg",
+		Name: r.ClusterID,
+		Tags: []string{},
+		Port: port,
+		Check: &consulapi.AgentServiceCheck{
+			HTTP:     fmt.Sprintf(`http://127.0.0.1:%s/health/pg`, os.Getenv("RDPGD_ADMIN_PORT")),
+			Interval: "10s",
+			Timeout:  "1s",
+		},
+	}
+	agent.ServiceRegister(registration)
 	return
 }

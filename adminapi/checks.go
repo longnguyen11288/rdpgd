@@ -24,6 +24,11 @@ func Check(check string) (status int) {
 		if numNodes < 2 {
 			return http.StatusInternalServerError
 		}
+	case "pg":
+		_, err = r.DB.Exec(`SELECT CURRENT_TIMESTAMP;`)
+		if err != nil {
+			return http.StatusInternalServerError
+		}
 	default:
 		return http.StatusInternalServerError
 	}

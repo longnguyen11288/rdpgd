@@ -55,7 +55,7 @@ func (c *Cluster) SetWriteMaster(n *Node) (err error) {
 		Port:    5432,
 		Check: &consulapi.AgentServiceCheck{
 			Interval: "10s",
-			Script:   "/var/vcap/jobs/rdpg-service/bin/check ha_pb_pgb",
+			Script:   "/var/vcap/jobs/rdpg-service/bin/check ha_pb_pg",
 			TTL:      "0s",
 			Timeout:  "5s",
 		},

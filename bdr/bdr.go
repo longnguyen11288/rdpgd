@@ -21,12 +21,13 @@ type BDR struct {
 	DB        *sqlx.DB
 }
 
-func NewBDR(dc string) (r *BDR) {
-	r = &BDR{ClusterID: dc}
+func NewBDR(cluster_id string) (r *BDR) {
+	r = &BDR{ClusterID: cluster_id}
 	return
 }
 
 func (b *BDR) PGNodes() (nodes []pg.PG, err error) {
+	// How do we get list of nodes with associated tags...
 	client, err := consulapi.NewClient(consulapi.DefaultConfig())
 	if err != nil {
 		log.Error(fmt.Sprintf("bdr.PGNodes() %s ! %s", b.ClusterID, err))
@@ -34,6 +35,7 @@ func (b *BDR) PGNodes() (nodes []pg.PG, err error) {
 	}
 	catalog := client.Catalog()
 	q := consulapi.QueryOptions{Datacenter: b.ClusterID}
+
 	catalogNodes, _, err := catalog.Nodes(&q)
 	if err != nil {
 		log.Error(fmt.Sprintf("bdr.PGNodes() %s ! %s", b.ClusterID, err))
@@ -217,7 +219,6 @@ func isWriteMaster() (b bool) {
 	}
 	agent := client.Agent()
 	info, err := agent.Self()
-
 	dc := info["Config"]["Datacenter"].(string)
 	myIP := info["Config"]["AdvertiseAddr"].(string)
 
