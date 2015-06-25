@@ -78,7 +78,10 @@ func (b *BDR) CreateDatabase(dbname, owner string) (err error) {
 	}
 	if err != nil {
 		// Cleanup in BDR currently requires droping the database and trying again...
-		b.DropDatabase(dbname)
+		err = b.DropDatabase(dbname)
+		if err != nil {
+			log.Error(fmt.Sprintf(`bdr.BDR#CreateDatabase(%s,%s) Dropping Database due to Create Error ! %s`, dbname, owner, err))
+		}
 	}
 	return
 }
@@ -113,13 +116,16 @@ func (b *BDR) CreateReplicationGroup(dbname string) (err error) {
 			err = pg.BDRGroupJoin(group, dbname, nodes[0])
 		}
 		if err != nil {
-			log.Error(fmt.Sprintf(`bdr.BDR<%s>#CreateExtensions(%s) ! %s`, pg.IP, dbname, err))
+			log.Error(fmt.Sprintf(`bdr.BDR<%s>#CreateReplicationGroup(%s) ! %s`, pg.IP, dbname, err))
 			break
 		}
 	}
 	if err != nil {
 		// Cleanup in BDR currently requires droping the database and trying again...
-		b.DropDatabase(dbname)
+		err = b.DropDatabase(dbname)
+		if err != nil {
+			log.Error(fmt.Sprintf(`bdr.BDR#CreateReplicationGroup(%s) Dropping Database due to Create Error ! %s`, dbname, err))
+		}
 	}
 	return err
 }

@@ -17,7 +17,8 @@ func (r *RDPG) Bootstrap(role string) (err error) {
 	if port == "" {
 		port = "5432"
 	}
-	p := pg.NewPG(`127.0.0.1`, port, `postgres`, `postgres`)
+	p := pg.NewPG(`127.0.0.1`, port, `postgres`, `postgres`, ``)
+
 	exists, err := p.UserExists(`rdpg`)
 	if err != nil {
 		log.Error(fmt.Sprintf("r.RDPG#Bootstrap() UserExists() ! %s", err))

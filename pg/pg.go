@@ -14,6 +14,7 @@ type PG struct {
 	IP             string `db:"ip" json:"ip"`
 	Port           string `db:"port" json:"port"`
 	User           string `db:"user" json:"user"`
+	Pass           string `db:"pass" json:"pass"`
 	Database       string `db:"database" json:"database"`
 	ConnectTimeout string `db:"connect_timeout" json:"connect_timeout,omitempty"`
 	SSLMode        string `db:"sslmode" json:"sslmode,omitempty"`
@@ -22,12 +23,13 @@ type PG struct {
 }
 
 // Create and return a new PG using default parameters
-func NewPG(host, port, user, database string) (p PG) {
-	p = PG{IP: host, Port: port, User: user, Database: database}
-	p.ConnectTimeout = `3s` // Default connection time out.
+func NewPG(host, port, user, database, pass string) (p *PG) {
+	p = &PG{IP: host, Port: port, User: user, Database: database, Pass: pass}
+	p.ConnectTimeout = `3` // Default connection time out.
+	p.SSLMode = `disable`  // Default disable SSL Mode, can be overwritten using Set()
 	p.pgURI()
 	p.pgDSN()
-
+	log.Trace(fmt.Sprintf(`pg.PG#NewPG() New PG struct: %+v`, p))
 	return
 }
 
@@ -400,17 +402,55 @@ func (p *PG) Set(key, value string) (err error) {
 	return
 }
 
-// Build and set the host's URI property
+// Build and set the host's URI property according to the pattern:
+//   postgres://user:password@ip:port/database?sslmode=&connect_timeout=&...
 func (p *PG) pgURI() {
-	d := `postgres://%s@%s:%s/%s?fallback_application_name=%s&connect_timeout=%s&sslmode=%s`
-	p.URI = fmt.Sprintf(d, p.User, p.IP, p.Port, p.Database, `rdpg`, `5`, `disable`)
+
+	p.URI = "postgres://"
+	if p.User != "" {
+		p.URI += p.User
+	}
+	if p.Pass != "" {
+		p.URI += fmt.Sprintf(`:%s`, p.Pass)
+	}
+	if p.IP != "" {
+		p.URI += fmt.Sprintf(`@%s`, p.IP)
+	}
+	if p.Port != "" {
+		p.URI += fmt.Sprintf(`:%s`, p.Port)
+	}
+	if p.Database != "" {
+		p.URI += fmt.Sprintf(`/%s`, p.Database)
+	}
+	p.URI += fmt.Sprintf(`?sslmode=%s&fallback_application_name=rdpgd`, p.SSLMode)
+	if p.ConnectTimeout != "" {
+		p.URI += fmt.Sprintf(`&connect_timeout=%s`, p.ConnectTimeout)
+	}
 	return
 }
 
 // Build and set the host's DSN property
 func (p *PG) pgDSN() {
-	d := `user=%s host=%s port=%s dbname=%s fallback_application_name=%s connect_timeout=%s sslmode=%s`
-	p.DSN = fmt.Sprintf(d, p.User, p.IP, p.Port, p.Database, `rdpg`, `5`, `disable`)
+	p.DSN = ""
+	if p.IP != "" {
+		p.DSN += fmt.Sprintf(` host=%s`, p.IP)
+	}
+	if p.Port != "" {
+		p.DSN += fmt.Sprintf(` port=%s`, p.Port)
+	}
+	if p.User != "" {
+		p.DSN += fmt.Sprintf(` user=%s`, p.User)
+	}
+	if p.Pass != "" {
+		p.DSN += fmt.Sprintf(` password=%s`, p.Pass)
+	}
+	if p.Database != "" {
+		p.DSN += fmt.Sprintf(` dbname=%s`, p.Database)
+	}
+	if p.ConnectTimeout != "" {
+		p.DSN += fmt.Sprintf(` connect_timeout=%s`, p.ConnectTimeout)
+	}
+	p.DSN += fmt.Sprintf(`fallback_application_name=rdpgd sslmode=%s`, p.SSLMode)
 	return
 }
 
