@@ -59,7 +59,7 @@ func (b *BDR) CreateUser(dbuser, dbpass string) (err error) {
 		pg.Set(`database`, `postgres`)
 		err = pg.CreateUser(dbuser, dbpass)
 		if err != nil {
-			log.Error(fmt.Sprintf(`bdr.BDR<%s>#CreateUser(%s) ! %s`, dbuser, err))
+			log.Error(fmt.Sprintf(`bdr.BDR<%s>#CreateUser(%s) ! %s`, pg.IP, dbuser, err))
 			return err
 		}
 	}
@@ -74,7 +74,7 @@ func (b *BDR) CreateDatabase(dbname, owner string) (err error) {
 	for _, pg := range nodes {
 		err = pg.CreateDatabase(dbname, owner)
 		if err != nil {
-			log.Error(fmt.Sprintf(`bdr.BDR<%s>#CreateDatabase(%s,%s) %s ! %s`, pg.IP, dbname, owner, err))
+			log.Error(fmt.Sprintf(`bdr.BDR<%s>#CreateDatabase(%s,%s) ! %s`, pg.IP, dbname, owner, err))
 			break
 		}
 	}

@@ -122,7 +122,7 @@ func (i *Instance) Provision() (err error) {
 			log.Error(fmt.Sprintf("cfsbapi.Instance#Provision(%s) ! %s", i.InstanceId, err))
 			return
 		}
-		log.Trace(fmt.Sprintf(`cfsbapi.Instance#Provision(%s) > Attempting to lock instance %s.`, i.InstanceId, id))
+		log.Trace(fmt.Sprintf(`cfsbapi.Instance#Provision(%s) > Attempting to lock instance %d.`, i.InstanceId, id))
 
 		i.Id = string(id)
 
