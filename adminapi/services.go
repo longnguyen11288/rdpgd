@@ -96,7 +96,8 @@ backend pgbdr_write_master
 		}
 		pc := []string{string(pgbConf)}
 		pu := []string{string(pgbUsers)}
-		for _, i := range instances {
+		for index, _ := range instances {
+			i := instances[index]
 			// TODO: Fetch port from something like os.Getenv("PG_PORT") instead of hardcoding here.
 			c := fmt.Sprintf(`%s = host=%s port=%s dbname=%s`, i.Database, "127.0.0.1", "7432", i.Database)
 			pc = append(pc, c)

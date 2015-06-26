@@ -30,7 +30,8 @@ func Work(role string) {
 			log.Error(fmt.Sprintf(`tasks.Work() Selecting Task ! %s`, err))
 		}
 
-		for _, task := range tasks {
+		for i, _ := range tasks {
+			task := tasks[i]
 			err = task.Lock()
 			if err != nil {
 				continue
