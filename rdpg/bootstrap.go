@@ -220,7 +220,6 @@ func (r *RDPG) nonLeaderBootstrap() (err error) {
 			bdrLeaderIP = string(kvp.Value)
 			break
 		}
-		time.Sleep(1 * time.Second)
 	}
 
 	err = r.bdrGroupJoin()
