@@ -1,0 +1,49 @@
+{
+	"ImportPath": "github.com/wayneeseguin/rdpgd",
+	"GoVersion": "go1.4",
+	"Deps": [
+		{
+			"ImportPath": "github.com/gorilla/context",
+			"Rev": "1be7a086a5fd6440ef16fe96baeda0c78282b980"
+		},
+		{
+			"ImportPath": "github.com/gorilla/mux",
+			"Rev": "e444e69cbd2e2e3e0749a2f3c717cec491552bbf"
+		},
+		{
+			"ImportPath": "github.com/jmoiron/sqlx",
+			"Comment": "sqlx-v1.0-58-gac7070c",
+			"Rev": "ac7070c8a115e759a26e524fd299efdac81b7e86"
+		},
+		{
+			"ImportPath": "github.com/lib/pq",
+			"Comment": "go1.0-cutoff-21-g2ca26b3",
+			"Rev": "2ca26b30a7edcd0b0af72d372c93a2d9d9c2038a"
+		},
+		{
+			"ImportPath": "github.com/wayneeseguin/rdpg-agent/admin",
+			"Comment": "0.0.20-2-g6364e3a",
+			"Rev": "6364e3aab9059d6aa99ea2987a920e06483b9784"
+		},
+		{
+			"ImportPath": "github.com/wayneeseguin/rdpg-agent/cfsb",
+			"Comment": "0.0.20-2-g6364e3a",
+			"Rev": "6364e3aab9059d6aa99ea2987a920e06483b9784"
+		},
+		{
+			"ImportPath": "github.com/wayneeseguin/rdpg-agent/log",
+			"Comment": "0.0.20-2-g6364e3a",
+			"Rev": "6364e3aab9059d6aa99ea2987a920e06483b9784"
+		},
+		{
+			"ImportPath": "github.com/wayneeseguin/rdpg-agent/rdpg",
+			"Comment": "0.0.20-2-g6364e3a",
+			"Rev": "6364e3aab9059d6aa99ea2987a920e06483b9784"
+		},
+		{
+			"ImportPath": "github.com/wayneeseguin/rdpg-agent/workers",
+			"Comment": "0.0.20-2-g6364e3a",
+			"Rev": "6364e3aab9059d6aa99ea2987a920e06483b9784"
+		}
+	]
+}
