@@ -27,7 +27,7 @@ func NewCluster(dc string) (c *Cluster, err error) {
 		return
 	}
 	catalog := client.Catalog()
-	q := consulapi.QueryOptions{Datacenter: dc}
+	q := consulapi.QueryOptions{}
 	catalogNodes, _, err := catalog.Nodes(&q)
 	if err != nil {
 		log.Error(fmt.Sprintf("rdpg.NewCluster() %s ! %s", dc, err))
@@ -72,7 +72,7 @@ func (c *Cluster) WriteMaster() (n *Node, err error) {
 		return
 	}
 	catalog := client.Catalog()
-	q := consulapi.QueryOptions{Datacenter: c.ID}
+	q := consulapi.QueryOptions{}
 	svc, _, err := catalog.Service("master", "", &q)
 	if err != nil {
 		log.Error(fmt.Sprintf(`rdpg.WriteMaster() ! %s`, err))

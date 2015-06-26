@@ -34,8 +34,7 @@ func (b *BDR) PGNodes() (nodes []pg.PG, err error) {
 		return
 	}
 	catalog := client.Catalog()
-	q := consulapi.QueryOptions{Datacenter: b.ClusterID}
-
+	q := consulapi.QueryOptions{}
 	catalogNodes, _, err := catalog.Nodes(&q)
 	if err != nil {
 		log.Error(fmt.Sprintf("bdr.PGNodes() %s ! %s", b.ClusterID, err))
@@ -219,11 +218,11 @@ func isWriteMaster() (b bool) {
 	}
 	agent := client.Agent()
 	info, err := agent.Self()
-	dc := info["Config"]["Datacenter"].(string)
+	//dc := info["Config"]["Datacenter"].(string)
 	myIP := info["Config"]["AdvertiseAddr"].(string)
 
 	catalog := client.Catalog()
-	q := consulapi.QueryOptions{Datacenter: dc}
+	q := consulapi.QueryOptions{}
 	svc, _, err := catalog.Service("master", "", &q)
 	if err != nil {
 		log.Error(fmt.Sprintf(`bdr.IAmWriteMaster() ! %s`, err))
