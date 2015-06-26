@@ -25,7 +25,7 @@ func init() {
 	if pgPort == "" {
 		pgPort = "5432"
 	}
-	pgPort = os.Getenv(`RDPGD_PG_PASS`)
+	pgPass = os.Getenv(`RDPGD_PG_PASS`)
 }
 
 // Bootstrap the RDPG Database and associated services.

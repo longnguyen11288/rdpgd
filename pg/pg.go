@@ -24,11 +24,15 @@ type PG struct {
 
 // Create and return a new PG using default parameters
 func NewPG(host, port, user, database, pass string) (p *PG) {
+
 	p = &PG{IP: host, Port: port, User: user, Database: database, Pass: pass}
+
 	p.ConnectTimeout = `5` // Default connection time out.
 	p.SSLMode = `disable`  // Default disable SSL Mode, can be overwritten using Set()
+
 	p.pgURI()
 	p.pgDSN()
+
 	log.Trace(fmt.Sprintf(`pg.PG#NewPG() New PG struct: %+v`, p))
 	return
 }
@@ -404,7 +408,6 @@ func (p *PG) Set(key, value string) (err error) {
 // Build and set the host's URI property according to the pattern:
 //   postgres://user:password@ip:port/database?sslmode=&connect_timeout=&...
 func (p *PG) pgURI() {
-
 	p.URI = "postgres://"
 	if p.User != "" {
 		p.URI += p.User
