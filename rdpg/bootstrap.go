@@ -144,7 +144,8 @@ func (r *RDPG) leaderBootstrap() (err error) {
 		log.Error(fmt.Sprintf(`rdpg.leaderBootstrap() kv.Get() ! %s`, err))
 		return
 	}
-	if len(kvp.Value) > 0 {
+	v := string(kvp.Value)
+	if len(v) > 0 {
 		// Skip, bdr group already created
 	} else {
 		// BDR Group not created yet, create and log myIP
@@ -214,10 +215,11 @@ func (r *RDPG) nonLeaderBootstrap() (err error) {
 			log.Error(fmt.Sprintf(`rdpg#nonLeaderBootstrap() kv.Get() ! %s`, err))
 			return err
 		}
-		if len(kvp.Value) == 0 {
+		v := string(kvp.Value)
+		if len(v) == 0 {
 			continue // Good to continue, bdr group was created...
 		} else {
-			bdrLeaderIP = string(kvp.Value)
+			bdrLeaderIP = v
 			break
 		}
 	}
