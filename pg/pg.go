@@ -25,7 +25,7 @@ type PG struct {
 // Create and return a new PG using default parameters
 func NewPG(host, port, user, database, pass string) (p *PG) {
 	p = &PG{IP: host, Port: port, User: user, Database: database, Pass: pass}
-	p.ConnectTimeout = `3` // Default connection time out.
+	p.ConnectTimeout = `5` // Default connection time out.
 	p.SSLMode = `disable`  // Default disable SSL Mode, can be overwritten using Set()
 	p.pgURI()
 	p.pgDSN()

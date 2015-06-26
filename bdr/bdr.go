@@ -40,7 +40,6 @@ func (b *BDR) PGNodes() (nodes []pg.PG, err error) {
 		log.Error(fmt.Sprintf("bdr.PGNodes() %s ! %s", b.ClusterID, err))
 		return
 	}
-
 	for _, catalogNode := range catalogNodes {
 		nodes = append(nodes, pg.PG{IP: catalogNode.Address})
 	}
