@@ -104,7 +104,7 @@ func ServiceHandler(w http.ResponseWriter, request *http.Request) {
 	case "PUT":
 		service, err := NewService(vars["service"])
 		if err != nil {
-			log.Error(fmt.Sprintf("ServiceHandler(): NewService(%s)"))
+			log.Error(fmt.Sprintf("ServiceHandler(): NewService(%s)", service))
 			http.Error(w, `{"status": %d, "description": "%s"}`, http.StatusInternalServerError)
 			return
 		}

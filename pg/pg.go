@@ -151,7 +151,7 @@ func (p *PG) UserGrantPrivileges(dbuser string, priviliges []string) (err error)
 
 	for _, priv := range priviliges {
 		sq := fmt.Sprintf(`ALTER USER %s GRANT %s;`, dbuser, priv)
-		log.Trace(fmt.Sprintf(`pg.PG<%s>#UserGrantPrivileges(%s) %s > %s`, p.IP, dbuser, sq))
+		log.Trace(fmt.Sprintf(`pg.PG<%s>#UserGrantPrivileges(%s) > %s`, p.IP, dbuser, sq))
 		result, err := db.Exec(sq)
 		rows, _ := result.RowsAffected()
 		if rows > 0 {
@@ -238,18 +238,17 @@ func (p *PG) DisableDatabase(dbname string) (err error) {
 	p.Set(`database`, `postgres`)
 	db, err := p.Connect()
 	if err != nil {
-		log.Error(fmt.Sprintf("pg.PG<%s>#DisableDatabase(%s,%s) %s ! %s", p.IP, dbname, p.URI, err))
+		log.Error(fmt.Sprintf("pg.PG<%s>#DisableDatabase(%s) %s ! %s", p.IP, dbname, p.URI, err))
 		return
 	}
 	defer db.Close()
 
 	sq := fmt.Sprintf(`SELECT rdpg.bdr_disable_database('%s');`, dbname)
-	log.Trace(fmt.Sprintf(`pg.PG<%s>#DisableDatabase(%s) DISABLE %s > %s`, dbname, p.IP, sq))
+	log.Trace(fmt.Sprintf(`pg.PG<%s>#DisableDatabase(%s) DISABLE > %s`, p.IP, dbname, sq))
 	_, err = db.Exec(sq)
 	if err != nil {
-		log.Error(fmt.Sprintf("p.PG#DisableDatabase(%s) DISABLE %s ! %s", dbname, p.IP, err))
+		log.Error(fmt.Sprintf("p.PG<%s>#DisableDatabase(%s) DISABLE ! %s", p.IP, dbname, err))
 	}
-
 	return
 }
 

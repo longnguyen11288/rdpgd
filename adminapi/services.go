@@ -41,11 +41,11 @@ func (s *Service) Configure() (err error) {
 		r := rdpg.NewRDPG()
 		cluster, err := rdpg.NewCluster(r.ClusterID)
 		if err != nil {
-			log.Error(fmt.Sprintf(`cfsbapi.Instance#ExternalDNS(%s) ! %s`, err))
+			log.Error(fmt.Sprintf(`cfsbapi.Instance#Configure() ! %s`, err))
 		}
 		node, err := cluster.WriteMaster()
 		if err != nil {
-			log.Error(fmt.Sprintf(`cfsbapi.Instance#ExternalDNS(%s) ! %s`, err))
+			log.Error(fmt.Sprintf(`cfsbapi.Instance#Configure() ! %s`, err))
 		}
 
 		// TODO: 5432 & 6432 from environmental configuration.

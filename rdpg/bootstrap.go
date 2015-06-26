@@ -142,13 +142,13 @@ func (r *RDPG) Bootstrap(role string) (err error) {
 		// Reconfigure PGBouncer
 		err = CallAdminAPI(node.PG.IP, "PUT", "services/pgbouncer/configure")
 		if err != nil {
-			log.Error(fmt.Sprintf(`rdpg.Bootstrap(%s) CallAdminAPI(pgbouncer/configure) %s ! %s`, node.PG.IP, err))
+			log.Error(fmt.Sprintf(`rdpg.Bootstrap() CallAdminAPI(%s,pgbouncer/configure) ! %s`, node.PG.IP, err))
 			return
 		}
 		// Reconfigure HAProxy
 		err = CallAdminAPI(node.PG.IP, "PUT", "services/haproxy/configure")
 		if err != nil {
-			log.Error(fmt.Sprintf(`rdpg.Bootstrap(%s) CallAdminAPI(haroxy/configure) %s ! %s`, node.PG.IP, err))
+			log.Error(fmt.Sprintf(`rdpg.Bootstrap() CallAdminAPI(%s,haroxy/configure) ! %s`, node.PG.IP, err))
 			return
 		}
 	}

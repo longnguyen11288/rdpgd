@@ -52,7 +52,7 @@ func (b *BDR) PGNodes() (nodes []pg.PG, err error) {
 func (b *BDR) CreateUser(dbuser, dbpass string) (err error) {
 	nodes, err := b.PGNodes()
 	if err != nil {
-		log.Error(fmt.Sprintf(`bdr.BDR#CreateUser(%s) %s ! %s`, dbuser, err))
+		log.Error(fmt.Sprintf(`bdr.BDR#CreateUser(%s) ! %s`, dbuser, err))
 	}
 
 	for _, pg := range nodes {
@@ -69,7 +69,7 @@ func (b *BDR) CreateUser(dbuser, dbpass string) (err error) {
 func (b *BDR) CreateDatabase(dbname, owner string) (err error) {
 	nodes, err := b.PGNodes()
 	if err != nil {
-		log.Error(fmt.Sprintf(`bdr.BDR#CreateDatabase(%s) %s ! %s`, dbname, err))
+		log.Error(fmt.Sprintf(`bdr.BDR#CreateDatabase(%s) ! %s`, dbname, err))
 	}
 	for _, pg := range nodes {
 		err = pg.CreateDatabase(dbname, owner)
@@ -91,7 +91,7 @@ func (b *BDR) CreateDatabase(dbname, owner string) (err error) {
 func (b *BDR) CreateExtensions(dbname string, exts []string) (err error) {
 	nodes, err := b.PGNodes()
 	if err != nil {
-		log.Error(fmt.Sprintf(`bdr.BDR#CreateExtensions(%s) %+v ! %s`, exts, err))
+		log.Error(fmt.Sprintf(`bdr.BDR#CreateExtensions(%s) %+v ! %s`, dbname, exts, err))
 	}
 	for _, pg := range nodes {
 		err = pg.CreateExtensions(dbname, exts)

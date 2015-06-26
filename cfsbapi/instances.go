@@ -122,13 +122,13 @@ func (i *Instance) Provision() (err error) {
 			log.Error(fmt.Sprintf("cfsbapi.Instance#Provision(%s) ! %s", i.InstanceId, err))
 			return
 		}
-		log.Trace(fmt.Sprintf(`cfsbapi.Instance#Provision(%s) > Attempting to lock instance %s.`, id))
+		log.Trace(fmt.Sprintf(`cfsbapi.Instance#Provision(%s) > Attempting to lock instance %s.`, i.InstanceId, id))
 
 		i.Id = string(id)
 
 		err = i.Lock()
 		if err != nil {
-			log.Error(fmt.Sprintf("cfsbapi.Instance#Provision(%s) Failed Locking instance %s ! %s", id, err))
+			log.Error(fmt.Sprintf("cfsbapi.Instance#Provision(%s) Failed Locking instance %d ! %s", i.InstanceId, id, err))
 			time.Sleep(5 * time.Second) // Wait a second...
 			continue                    // ...then try again
 		}
@@ -168,7 +168,7 @@ func (i *Instance) Remove() (err error) {
 
 	cluster, err := rdpg.NewCluster(i.ClusterID)
 	if err != nil {
-		log.Error(fmt.Sprintf(`cfsbapi.Instance#ExternalDNS(%s) ! %s`, err))
+		log.Error(fmt.Sprintf(`cfsbapi.Instance#ExternalDNS(%s) ! %s`, i.InstanceId, err))
 	}
 	for _, node := range cluster.Nodes {
 		err := rdpg.CallAdminAPI(node.PG.IP, "PUT", "services/pgbouncer/configure")
@@ -183,11 +183,11 @@ func (i *Instance) ExternalDNS() (dns string) {
 	r := rdpg.NewRDPG()
 	cluster, err := rdpg.NewCluster(r.ClusterID)
 	if err != nil {
-		log.Error(fmt.Sprintf(`cfsbapi.Instance#ExternalDNS(%s) ! %s`, err))
+		log.Error(fmt.Sprintf(`cfsbapi.Instance#ExternalDNS(%s) ! %s`, i.InstanceId, err))
 	}
 	node, err := cluster.WriteMaster()
 	if err != nil {
-		log.Error(fmt.Sprintf(`cfsbapi.Instance#ExternalDNS(%s) ! %s`, err))
+		log.Error(fmt.Sprintf(`cfsbapi.Instance#ExternalDNS(%s) ! %s`, i.InstanceId, err))
 	}
 
 	// TODO: Figure out where we'll store and retrieve the external DNS information instead of IP

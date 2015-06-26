@@ -54,7 +54,7 @@ func (r *RDPG) SetURI(uri string) (err error) {
 	// TODO: SetURI likely is not needed anymore.
 	if uri == "" || uri[0:13] != "postgresql://" {
 		// TODO: use uri.Parse to further validate URI.
-		err = fmt.Errorf(`Malformed postgresql:// URI`, uri)
+		err = fmt.Errorf(`Malformed postgresql:// URI : %s`, uri)
 		log.Error(fmt.Sprintf("rdpg.NewRDPG() uri malformed ! %s", err))
 		return
 	}
